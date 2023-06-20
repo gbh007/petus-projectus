@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/internal/desktop"
+	"app/internal/gate"
 	"context"
 	"flag"
 	"fmt"
@@ -24,7 +24,7 @@ func main() {
 	)
 	defer cancelNotify()
 
-	err := desktop.Run(ctx, fmt.Sprintf("%s:%d", *host, *port))
+	err := gate.Run(ctx, fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
 		log.Println(err)
 	}

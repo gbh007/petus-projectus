@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+// import "google/protobuf/timestamp.proto";
+
+option go_package = "internal/gate/gatepb";
+
+service Gate {
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+  rpc Register(RegisterRequest) returns (RegisterResponse) {}
+  rpc Button(ButtonRequest) returns (ButtonResponse) {}
+}
+
+message ErrorInfo {
+  bool has = 1;
+  string code = 2;
+  string text = 3;
+}
+
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  ErrorInfo error = 1; 
+  string token = 2;
+}
+
+
+message RegisterRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  ErrorInfo error = 1; 
+}
+
+
+message ButtonRequest {
+  string token = 1;
+  int64 duration = 2;
+  int64 chance = 3;
+}
+
+message ButtonResponse {
+  ErrorInfo error = 1; 
+}
+

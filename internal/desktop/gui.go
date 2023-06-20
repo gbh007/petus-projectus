@@ -1,6 +1,7 @@
 package desktop
 
 import (
+	"context"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -11,16 +12,21 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func Run() {
+func Run(ctx context.Context, addr string) error {
 	myApp := app.New()
 
-	controller := new(ControllerMock)
+	// controller := new(ControllerMock)
+	controller, err := newController_gRPC(addr)
+	if err != nil {
+		return err
+	}
+	defer controller.Close()
 
 	coreBox := container.NewVBox()
 	authBox := container.NewAppTabs(
-		container.NewTabItemWithIcon("Авторизация", theme.LoginIcon(), renderLogin(controller)),
-		container.NewTabItemWithIcon("Регистрация", theme.AccountIcon(), renderRegister(controller)),
-		container.NewTabItemWithIcon("Супер-кнопка", theme.HomeIcon(), renderButtonArea(controller)),
+		container.NewTabItemWithIcon("Авторизация", theme.LoginIcon(), renderLogin(ctx, controller)),
+		container.NewTabItemWithIcon("Регистрация", theme.AccountIcon(), renderRegister(ctx, controller)),
+		container.NewTabItemWithIcon("Супер-кнопка", theme.HomeIcon(), renderButtonArea(ctx, controller)),
 	)
 	coreBox.Add(authBox)
 
@@ -30,9 +36,11 @@ func Run() {
 	w.Show()
 
 	myApp.Run()
+
+	return nil
 }
 
-func renderLogin(c Controller) fyne.CanvasObject {
+func renderLogin(ctx context.Context, c Controller) fyne.CanvasObject {
 	login := widget.NewEntry()
 	password := widget.NewPasswordEntry()
 
@@ -41,7 +49,7 @@ func renderLogin(c Controller) fyne.CanvasObject {
 	loginCallback := func() {
 		alertBox.Hide()
 
-		err := c.Login(login.Text, password.Text)
+		err := c.Login(ctx, login.Text, password.Text)
 		if err != nil {
 			setError(err.Error())
 			alertBox.Show()
@@ -61,7 +69,7 @@ func renderLogin(c Controller) fyne.CanvasObject {
 	return container.NewVBox(alertBox, form)
 }
 
-func renderRegister(c Controller) fyne.CanvasObject {
+func renderRegister(ctx context.Context, c Controller) fyne.CanvasObject {
 	login := widget.NewEntry()
 	password1 := widget.NewPasswordEntry()
 	password2 := widget.NewPasswordEntry()
@@ -78,7 +86,7 @@ func renderRegister(c Controller) fyne.CanvasObject {
 			return
 		}
 
-		err := c.Register(login.Text, password1.Text)
+		err := c.Register(ctx, login.Text, password1.Text)
 		if err != nil {
 			setError(err.Error())
 			alertBox.Show()
@@ -112,7 +120,7 @@ func makeAlert() (fyne.CanvasObject, func(string)) {
 	}
 }
 
-func renderButtonArea(c Controller) fyne.CanvasObject {
+func renderButtonArea(ctx context.Context, c Controller) fyne.CanvasObject {
 	durationEntry := widget.NewEntry()
 	chanceEntry := widget.NewEntry()
 
@@ -151,7 +159,7 @@ func renderButtonArea(c Controller) fyne.CanvasObject {
 			return
 		}
 
-		err = c.ButtonClick(duration, chance)
+		err = c.ButtonClick(ctx, duration, chance)
 		if err != nil {
 			setError(err.Error())
 			alertBox.Show()
