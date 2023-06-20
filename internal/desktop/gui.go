@@ -1,6 +1,8 @@
 package desktop
 
 import (
+	"strconv"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -11,7 +13,6 @@ import (
 
 func Run() {
 	myApp := app.New()
-	myApp.Settings().SetTheme(theme.LightTheme())
 
 	controller := new(ControllerMock)
 
@@ -19,6 +20,7 @@ func Run() {
 	authBox := container.NewAppTabs(
 		container.NewTabItemWithIcon("Авторизация", theme.LoginIcon(), renderLogin(controller)),
 		container.NewTabItemWithIcon("Регистрация", theme.AccountIcon(), renderRegister(controller)),
+		container.NewTabItemWithIcon("Супер-кнопка", theme.HomeIcon(), renderButtonArea(controller)),
 	)
 	coreBox.Add(authBox)
 
@@ -108,4 +110,63 @@ func makeAlert() (fyne.CanvasObject, func(string)) {
 	return container.NewCenter(box), func(s string) {
 		_ = text.Set(s)
 	}
+}
+
+func renderButtonArea(c Controller) fyne.CanvasObject {
+	durationEntry := widget.NewEntry()
+	chanceEntry := widget.NewEntry()
+
+	alertBox, setError := makeAlert()
+
+	registerCallback := func() {
+		alertBox.Hide()
+
+		if durationEntry.Text == "" {
+			setError("Не указана продолжительность")
+			alertBox.Show()
+
+			return
+		}
+
+		if chanceEntry.Text == "" {
+			setError("Не указана вероятность провала")
+			alertBox.Show()
+
+			return
+		}
+
+		duration, err := strconv.ParseInt(durationEntry.Text, 10, 64)
+		if err != nil {
+			setError(err.Error())
+			alertBox.Show()
+
+			return
+		}
+
+		chance, err := strconv.ParseInt(chanceEntry.Text, 10, 64)
+		if err != nil {
+			setError(err.Error())
+			alertBox.Show()
+
+			return
+		}
+
+		err = c.ButtonClick(duration, chance)
+		if err != nil {
+			setError(err.Error())
+			alertBox.Show()
+
+			return
+		}
+	}
+
+	alertBox.Hide()
+
+	form := widget.NewForm(
+		widget.NewFormItem("Продолжительность", durationEntry),
+		widget.NewFormItem("Вероятность провала", chanceEntry),
+		widget.NewFormItem("", widget.NewButton("Отправить запрос", registerCallback)),
+	)
+
+	return container.NewVBox(alertBox, form)
 }
