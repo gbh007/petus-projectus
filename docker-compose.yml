@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  gate:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile-gate
+    restart: always
+    ports:
+      - 14281:14281
+
+  mariadb:
+    image: mariadb:11
+    restart: always
+    command: "--init-file /init.sql"
+    environment:
+      MARIADB_ROOT_PASSWORD: 12345
+    volumes:
+      - "./_build/mariadb:/var/lib/mysql"
+      - "./deployments/maria-db-dev-init.sql:/init.sql"
+    ports:
+      - 13306:3306

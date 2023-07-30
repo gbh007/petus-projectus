@@ -8,6 +8,8 @@ import (
 var (
 	// Ошибка миграций БД
 	MigratorError = errors.New("migrator")
+	// Неизвестный диалект
+	UnknownDialect = errors.New("unknown dialect")
 )
 
 func logIfErr(err error) {

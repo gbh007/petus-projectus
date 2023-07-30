@@ -24,8 +24,12 @@ func main() {
 	)
 	defer cancelNotify()
 
+	log.Println("server start")
+
 	err := gate.Run(ctx, fmt.Sprintf("%s:%d", *host, *port))
 	if err != nil {
 		log.Println(err)
 	}
+
+	log.Println("server stop")
 }

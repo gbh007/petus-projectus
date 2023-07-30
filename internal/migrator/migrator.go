@@ -10,7 +10,7 @@ import (
 )
 
 // MigrateAll - производит накат всех доступных миграций
-func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash bool) error {
+func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash bool, dialect int) error {
 	list, err := getFileList(ctx, migrationsDir)
 	if err != nil {
 		return fmt.Errorf("%w: %w", MigratorError, err)
@@ -37,8 +37,12 @@ func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash
 		}
 	}()
 
-	// FIXME: для разных диалектов
-	_, err = tx.ExecContext(ctx, techMigrationPostgreSQL)
+	techMigration, err := getMigration(dialect)
+	if err != nil {
+		return fmt.Errorf("%w: %w", MigratorError, err)
+	}
+
+	_, err = tx.ExecContext(ctx, techMigration)
 	if err != nil {
 		return fmt.Errorf("%w: %w", MigratorError, err)
 	}
