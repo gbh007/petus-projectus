@@ -54,3 +54,39 @@ func (s *authServer) Register(ctx context.Context, req *authpb.RegisterRequest) 
 
 	return new(authpb.RegisterResponse), nil
 }
+
+func (s *authServer) Logout(ctx context.Context, req *authpb.LogoutRequest) (*authpb.LogoutResponse, error) {
+	logRoute(ctx, "logout")
+
+	err := s.deleteSession(ctx, req.GetToken())
+	if err != nil {
+		return &authpb.LogoutResponse{
+			Error: &authpb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	return new(authpb.LogoutResponse), nil
+}
+
+func (s *authServer) Info(ctx context.Context, req *authpb.InfoRequest) (*authpb.InfoResponse, error) {
+	logRoute(ctx, "info")
+
+	user, err := s.getUser(ctx, req.GetToken())
+	if err != nil {
+		return &authpb.InfoResponse{
+			Error: &authpb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	return &authpb.InfoResponse{
+		UserID: user.ID,
+	}, nil
+}

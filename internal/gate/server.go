@@ -4,52 +4,76 @@ import (
 	"app/internal/gate/gatepb"
 	"context"
 	"log"
-	"net"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 )
 
-func Run(ctx context.Context, selfAddr, authAddr string) error {
-	authClient, err := newAuthClient(authAddr)
-	if err != nil {
-		return err
-	}
+type gateServer struct {
+	gatepb.GateServer
 
-	defer authClient.Close()
-
-	lis, err := net.Listen("tcp", selfAddr)
-	if err != nil {
-		return err
-	}
-
-	s := &mockServer{
-		auth: authClient,
-	}
-
-	grpcServer := grpc.NewServer()
-	gatepb.RegisterGateServer(grpcServer, s)
-
-	go func() {
-		<-ctx.Done()
-		grpcServer.GracefulStop()
-	}()
-
-	err = grpcServer.Serve(lis)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	auth *authClient
 }
 
-func logRoute(ctx context.Context, routeName string) {
-	addr := "unknown"
+func (s *gateServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
+	logRoute(ctx, "login")
 
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		addr = p.Addr.String()
+	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
+	if err != nil {
+		return &gatepb.LoginResponse{
+			Error: &gatepb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
 	}
 
-	log.Printf("handle %s %s\n", routeName, addr)
+	return &gatepb.LoginResponse{
+		Token: token,
+	}, nil
+}
+
+func (s *gateServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*gatepb.RegisterResponse, error) {
+	logRoute(ctx, "register")
+
+	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
+	if err != nil {
+		return &gatepb.RegisterResponse{
+			Error: &gatepb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	return new(gatepb.RegisterResponse), nil
+}
+
+func (s *gateServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*gatepb.ButtonResponse, error) {
+	logRoute(ctx, "button")
+
+	if req.GetDuration() < 0 {
+		return &gatepb.ButtonResponse{
+			Error: &gatepb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: "invalid duration",
+			},
+		}, nil
+	}
+
+	info, err := s.auth.Info(ctx, req.GetToken())
+	if err != nil {
+		return &gatepb.ButtonResponse{
+			Error: &gatepb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	// FIXME
+	log.Println(info)
+
+	return new(gatepb.ButtonResponse), nil
 }

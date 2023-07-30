@@ -30,15 +30,15 @@ func (s *authServer) createUser(ctx context.Context, login, password string) (in
 }
 
 // createSession - создает новую сессию пользователя
-func (domain *authServer) createSession(ctx context.Context, login, password string) (string, error) {
-	user, err := domain.checkUser(ctx, login, password)
+func (s *authServer) createSession(ctx context.Context, login, password string) (string, error) {
+	user, err := s.checkUser(ctx, login, password)
 	if err != nil {
 		return "", fmt.Errorf("create session: %w", err)
 	}
 
 	token := randomSHA256String()
 
-	err = domain.db.CreateSession(ctx, &storage.Session{
+	err = s.db.CreateSession(ctx, &storage.Session{
 		Token:  token,
 		UserID: user.ID,
 	})
@@ -50,8 +50,8 @@ func (domain *authServer) createSession(ctx context.Context, login, password str
 }
 
 // deleteSession - удаляет сессию пользователя
-func (domain *authServer) deleteSession(ctx context.Context, token string) error {
-	err := domain.db.DeleteSessionByToken(ctx, token)
+func (s *authServer) deleteSession(ctx context.Context, token string) error {
+	err := s.db.DeleteSessionByToken(ctx, token)
 	if err != nil {
 		return fmt.Errorf("delete session: %w", err)
 	}
@@ -60,10 +60,10 @@ func (domain *authServer) deleteSession(ctx context.Context, token string) error
 }
 
 // checkUser - проверяет данные пользователя
-func (domain *authServer) checkUser(ctx context.Context, login, password string) (*storage.User, error) {
+func (s *authServer) checkUser(ctx context.Context, login, password string) (*storage.User, error) {
 	login = strings.ToLower(login)
 
-	user, err := domain.db.GetUserByLogin(ctx, login)
+	user, err := s.db.GetUserByLogin(ctx, login)
 
 	// Такого пользователя не существует
 	if errors.Is(err, sql.ErrNoRows) {
@@ -77,6 +77,21 @@ func (domain *authServer) checkUser(ctx context.Context, login, password string)
 	// Проверка пароля
 	if saltPassword(password, user.Salt) != user.Password {
 		return nil, LoginOrPasswordIncorrectErr
+	}
+
+	return user, nil
+}
+
+// getUser - возвращает данные пользователя по токену
+func (s *authServer) getUser(ctx context.Context, token string) (*storage.User, error) {
+	session, err := s.db.GetSessionByToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.db.GetUserByID(ctx, session.UserID)
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil

@@ -13,6 +13,10 @@ type authClient struct {
 	conn   *grpc.ClientConn
 }
 
+type UserInfo struct {
+	ID int64
+}
+
 func newAuthClient(addr string) (*authClient, error) {
 	c := new(authClient)
 
@@ -72,4 +76,24 @@ func (c *authClient) Register(ctx context.Context, login, pass string) error {
 	}
 
 	return nil
+}
+
+func (c *authClient) Info(ctx context.Context, token string) (*UserInfo, error) {
+	res, err := c.client.Info(ctx, &authpb.InfoRequest{
+		Token: token,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if res.GetError().GetHas() {
+		err := errors.New(res.GetError().GetText())
+
+		return nil, err
+	}
+
+	return &UserInfo{
+		ID: res.GetUserID(),
+	}, nil
 }
