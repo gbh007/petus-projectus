@@ -1,15 +1,12 @@
 syntax = "proto3";
 
-// import "google/protobuf/timestamp.proto";
+package auth;
 
-package gate;
+option go_package = "internal/auth/authpb";
 
-option go_package = "internal/gate/gatepb";
-
-service Gate {
+service Auth {
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Register(RegisterRequest) returns (RegisterResponse) {}
-  rpc Button(ButtonRequest) returns (ButtonResponse) {}
 }
 
 message ErrorInfo {
@@ -38,15 +35,3 @@ message RegisterRequest {
 message RegisterResponse {
   ErrorInfo error = 1; 
 }
-
-
-message ButtonRequest {
-  string token = 1;
-  int64 duration = 2;
-  int64 chance = 3;
-}
-
-message ButtonResponse {
-  ErrorInfo error = 1; 
-}
-

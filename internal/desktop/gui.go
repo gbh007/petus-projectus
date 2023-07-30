@@ -20,6 +20,7 @@ func Run(ctx context.Context, addr string) error {
 	if err != nil {
 		return err
 	}
+
 	defer controller.Close()
 
 	coreBox := container.NewVBox()

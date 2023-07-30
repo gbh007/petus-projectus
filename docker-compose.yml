@@ -8,6 +8,14 @@ services:
     restart: always
     ports:
       - 14281:14281
+    command: "-h 0.0.0.0 -auth auth:50051"
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile-auth
+    restart: always
+    command: "-h 0.0.0.0 -db-user auth_user -db-pass auth_pwd -db-addr mariadb:3306 -db-name auth_db"
 
   mariadb:
     image: mariadb:11

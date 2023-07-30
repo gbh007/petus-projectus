@@ -1,7 +1,8 @@
-package gate
+package auth
 
 import (
-	"app/internal/gate/gatepb"
+	"app/internal/auth/authpb"
+	"app/internal/auth/storage"
 	"context"
 	"log"
 	"net"
@@ -10,25 +11,27 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func Run(ctx context.Context, selfAddr, authAddr string) error {
-	authClient, err := newAuthClient(authAddr)
+type DBConfig struct {
+	Username, Password, Addr, DatabaseName string
+}
+
+func Run(ctx context.Context, addr string, cfg DBConfig) error {
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 
-	defer authClient.Close()
-
-	lis, err := net.Listen("tcp", selfAddr)
+	db, err := storage.Init(ctx, cfg.Username, cfg.Password, cfg.Addr, cfg.DatabaseName)
 	if err != nil {
 		return err
 	}
 
-	s := &mockServer{
-		auth: authClient,
+	s := &authServer{
+		db: db,
 	}
 
 	grpcServer := grpc.NewServer()
-	gatepb.RegisterGateServer(grpcServer, s)
+	authpb.RegisterAuthServer(grpcServer, s)
 
 	go func() {
 		<-ctx.Done()

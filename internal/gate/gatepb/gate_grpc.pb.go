@@ -4,6 +4,8 @@
 // - protoc             v3.12.4
 // source: gate.proto
 
+// import "google/protobuf/timestamp.proto";
+
 package gatepb
 
 import (
@@ -19,9 +21,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Gate_Login_FullMethodName    = "/Gate/Login"
-	Gate_Register_FullMethodName = "/Gate/Register"
-	Gate_Button_FullMethodName   = "/Gate/Button"
+	Gate_Login_FullMethodName    = "/gate.Gate/Login"
+	Gate_Register_FullMethodName = "/gate.Gate/Register"
+	Gate_Button_FullMethodName   = "/gate.Gate/Button"
 )
 
 // GateClient is the client API for Gate service.
@@ -162,7 +164,7 @@ func _Gate_Button_Handler(srv interface{}, ctx context.Context, dec func(interfa
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Gate_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Gate",
+	ServiceName: "gate.Gate",
 	HandlerType: (*GateServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -8,35 +8,39 @@ import (
 
 type mockServer struct {
 	gatepb.GateServer
+
+	auth *authClient
 }
 
-func (mockServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
+func (s *mockServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
 	logRoute(ctx, "login")
 
-	if req.GetLogin() == "err" {
+	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
+	if err != nil {
 		return &gatepb.LoginResponse{
 			Error: &gatepb.ErrorInfo{
 				Has:  true,
-				Code: "123",
-				Text: "grpc -> " + req.GetPassword(),
+				Code: "0",
+				Text: err.Error(),
 			},
 		}, nil
 	}
 
 	return &gatepb.LoginResponse{
-		Token: "Test",
+		Token: token,
 	}, nil
 }
 
-func (mockServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*gatepb.RegisterResponse, error) {
+func (s *mockServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*gatepb.RegisterResponse, error) {
 	logRoute(ctx, "register")
 
-	if req.GetLogin() == "err" {
+	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
+	if err != nil {
 		return &gatepb.RegisterResponse{
 			Error: &gatepb.ErrorInfo{
 				Has:  true,
-				Code: "123",
-				Text: "grpc -> " + req.GetPassword(),
+				Code: "0",
+				Text: err.Error(),
 			},
 		}, nil
 	}

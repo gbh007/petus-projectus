@@ -3,7 +3,7 @@ package migrator
 // Диалект мигратора.
 const (
 	PostgreSQL = iota
-	MariaDB
+	MySQL
 	ClickHouse
 )
 
@@ -12,7 +12,7 @@ func getMigration(dialect int) (string, error) {
 	case PostgreSQL:
 		return techMigrationPostgreSQL, nil
 
-	case MariaDB:
+	case MySQL:
 		return techMigrationMariaDB, nil
 
 	default:
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS migrations(
 CREATE TABLE IF NOT EXISTS migrations(
     id          INT         PRIMARY KEY,
     filename    TEXT        NOT NULL,
-    hash        TINYTEXT    NOT NULL,
-    applied     TIMESTAMP  NOT NULL
+    hash        TEXT        NOT NULL,
+    applied     TIMESTAMP   NOT NULL
 );
 `
 )
