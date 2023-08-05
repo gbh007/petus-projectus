@@ -1,0 +1,30 @@
+package kafka
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/segmentio/kafka-go"
+)
+
+func (c *Client) Write(ctx context.Context, k string, v any) error {
+	if c.writer == nil {
+		return fmt.Errorf("%w: Write: %w", ErrKafkaCLient, ErrConnectionNotInitialized)
+	}
+
+	data, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("%w: Write: %w", ErrKafkaCLient, err)
+	}
+
+	err = c.writer.WriteMessages(ctx, kafka.Message{
+		Key:   []byte(k),
+		Value: data,
+	})
+	if err != nil {
+		return fmt.Errorf("%w: Write: %w", ErrKafkaCLient, err)
+	}
+
+	return nil
+}

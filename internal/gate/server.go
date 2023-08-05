@@ -1,15 +1,19 @@
 package gate
 
 import (
+	"app/internal/gate/gatedto"
 	"app/internal/gate/gatepb"
+	"app/internal/kafka"
 	"context"
-	"log"
+
+	"google.golang.org/grpc/peer"
 )
 
 type gateServer struct {
 	gatepb.GateServer
 
-	auth *authClient
+	auth  *authClient
+	kafka *kafka.Client
 }
 
 func (s *gateServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
@@ -25,6 +29,19 @@ func (s *gateServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gate
 			},
 		}, nil
 	}
+
+	kData := gatedto.KafkaData{
+		SessionToken: token,
+		Action:       gatedto.ActionLogin,
+	}
+
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		kData.Addr = p.Addr.String()
+	}
+
+	// Ошибка не имеет значения в данном случае
+	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
 
 	return &gatepb.LoginResponse{
 		Token: token,
@@ -45,6 +62,18 @@ func (s *gateServer) Register(ctx context.Context, req *gatepb.RegisterRequest) 
 		}, nil
 	}
 
+	kData := gatedto.KafkaData{
+		Action: gatedto.ActionRegister,
+	}
+
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		kData.Addr = p.Addr.String()
+	}
+
+	// Ошибка не имеет значения в данном случае
+	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
+
 	return new(gatepb.RegisterResponse), nil
 }
 
@@ -61,6 +90,8 @@ func (s *gateServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*ga
 		}, nil
 	}
 
+	req.GetChance()
+
 	info, err := s.auth.Info(ctx, req.GetToken())
 	if err != nil {
 		return &gatepb.ButtonResponse{
@@ -72,8 +103,29 @@ func (s *gateServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*ga
 		}, nil
 	}
 
-	// FIXME
-	log.Println(info)
+	kData := gatedto.KafkaData{
+		UserID:       info.ID,
+		SessionToken: req.GetToken(),
+		Action:       gatedto.ActionButton,
+		Chance:       req.GetChance(),
+		Duration:     req.GetDuration(),
+	}
+
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		kData.Addr = p.Addr.String()
+	}
+
+	err = s.kafka.Write(ctx, randomSHA256String(), kData)
+	if err != nil {
+		return &gatepb.ButtonResponse{
+			Error: &gatepb.ErrorInfo{
+				Has:  true,
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
 
 	return new(gatepb.ButtonResponse), nil
 }

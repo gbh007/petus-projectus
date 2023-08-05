@@ -1,0 +1,83 @@
+package kafka
+
+import (
+	"fmt"
+
+	"github.com/segmentio/kafka-go"
+)
+
+func (c *Client) Connect(createTopic bool) error {
+	conn, err := kafka.Dial("tcp", c.addr)
+	if err != nil {
+		return fmt.Errorf("%w: Connect: %w", ErrKafkaCLient, err)
+	}
+
+	c.kafkaConn = conn
+
+	if createTopic {
+		topicConfigs := []kafka.TopicConfig{
+			{
+				Topic:             c.topic,
+				NumPartitions:     c.numPartitions,
+				ReplicationFactor: 1,
+			},
+		}
+
+		err = c.kafkaConn.CreateTopics(topicConfigs...)
+		if err != nil {
+			return fmt.Errorf("%w: Connect: %w: %w", ErrKafkaCLient, ErrFailToCreateTopic, err)
+		}
+	}
+
+	if c.groupID != "" {
+		c.reader = kafka.NewReader(kafka.ReaderConfig{
+			Brokers: []string{c.addr},
+			GroupID: c.groupID,
+			Topic:   c.topic,
+		})
+	}
+
+	c.writer = kafka.NewWriter(kafka.WriterConfig{
+		Brokers: []string{c.addr},
+		Topic:   c.topic,
+	})
+
+	return nil
+}
+
+func (c *Client) Close() error {
+	var errs []error
+
+	if c.kafkaConn != nil {
+		err := c.kafkaConn.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if c.writer != nil {
+		err := c.writer.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if c.reader != nil {
+		err := c.reader.Close()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	err := fmt.Errorf("%w: Close", ErrKafkaCLient)
+
+	for _, e := range errs {
+		err = fmt.Errorf("%w: %w", err, e)
+	}
+
+	return err
+}
