@@ -22,6 +22,14 @@ services:
     depends_on:
       - mariadb
 
+  handler:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile-handler
+    restart: always
+    depends_on:
+      - kafka
+
   mariadb:
     image: mariadb:11
     restart: always
@@ -29,7 +37,7 @@ services:
     environment:
       MARIADB_ROOT_PASSWORD: 12345
     volumes:
-      - "./_build/mariadb:/var/lib/mysql"
+      - "mariadb:/var/lib/mysql"
       - "./deployments/maria-db-dev-init.sql:/init.sql"
     ports:
       - 13306:3306
@@ -41,9 +49,9 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
-      - "./_build/zookeeper/secrets:/etc/zookeeper/secrets"
-      - "./_build/zookeeper/data:/var/lib/zookeeper/data"
-      - "./_build/zookeeper/log:/var/lib/zookeeper/log"
+      - "zookeeper-secrets:/etc/zookeeper/secrets"
+      - "zookeeper-data:/var/lib/zookeeper/data"
+      - "zookeeper-log:/var/lib/zookeeper/log"
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -51,8 +59,8 @@ services:
     depends_on:
       - zookeeper
     volumes:
-      - "./_build/kafka/secrets:/etc/kafka/secrets"
-      - "./_build/kafka/data:/var/lib/kafka/data"
+      - "kafka-secrets:/etc/kafka/secrets"
+      - "kafka-data:/var/lib/kafka/data"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -60,3 +68,12 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+  mariadb:
+  kafka-secrets:
+  kafka-data:
+  zookeeper-secrets:
+  zookeeper-data:
+  zookeeper-log:
+   

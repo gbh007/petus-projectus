@@ -36,7 +36,8 @@ func Run(ctx context.Context, selfAddr, authAddr string, kCnf KafkaConfig) error
 	}
 
 	s := &gateServer{
-		auth: authClient,
+		auth:  authClient,
+		kafka: kafkaClient,
 	}
 
 	grpcServer := grpc.NewServer()
