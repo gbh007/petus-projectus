@@ -10,12 +10,12 @@ import (
 
 func (c *Client) Write(ctx context.Context, k string, v any) error {
 	if c.writer == nil {
-		return fmt.Errorf("%w: Write: %w", ErrKafkaCLient, ErrConnectionNotInitialized)
+		return fmt.Errorf("%w: Write: %w", ErrKafkaClient, ErrConnectionNotInitialized)
 	}
 
 	data, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Errorf("%w: Write: %w", ErrKafkaCLient, err)
+		return fmt.Errorf("%w: Write: %w", ErrKafkaClient, err)
 	}
 
 	err = c.writer.WriteMessages(ctx, kafka.Message{
@@ -23,7 +23,7 @@ func (c *Client) Write(ctx context.Context, k string, v any) error {
 		Value: data,
 	})
 	if err != nil {
-		return fmt.Errorf("%w: Write: %w", ErrKafkaCLient, err)
+		return fmt.Errorf("%w: Write: %w", ErrKafkaClient, err)
 	}
 
 	return nil

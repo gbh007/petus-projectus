@@ -2,32 +2,33 @@ package server
 
 import (
 	"app/clients/kafka"
+	"app/clients/rabbitmq"
 	gatedto "app/services/gate/dto"
+	handlerdto "app/services/handler/dto"
 	"app/services/handler/internal/storage"
 	"context"
 	"database/sql"
 	"log"
+	"time"
 )
 
-type KafkaConfig struct {
-	Topic         string
-	GroupID       string
-	Addr          string
-	NumPartitions int
-}
-
-type DBConfig struct {
-	Username, Password, Addr, DatabaseName string
-}
-
-func Run(ctx context.Context, kCnf KafkaConfig, dbCnf DBConfig) error {
+func Run(ctx context.Context, kCnf KafkaConfig, dbCnf DBConfig, rCnf RabbitMQConfig) error {
 	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
+
 	err := kafkaClient.Connect(kCnf.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
 	defer kafkaClient.Close()
+
+	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](rCnf.Username, rCnf.Password, rCnf.Addr, rCnf.QueueName)
+	err = rabbitClient.Connect(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer rabbitClient.Close()
 
 	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
 	if err != nil {
@@ -49,13 +50,14 @@ label1:
 			}
 		}
 
-		handle(ctx, key, data, db)
+		handle(ctx, key, data, db, rabbitClient)
 	}
 
 	return nil
 }
 
-func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storage.Database) {
+// FIXME: рефакторинг сигнатуры
+func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storage.Database, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
 	// FIXME: необходима полная реализация
 	log.Printf("accept %s %#+v\n", key, data)
 
@@ -84,4 +86,23 @@ func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storag
 	if err != nil {
 		log.Println(key, err)
 	}
+
+	if data.Action != gatedto.ActionButton {
+		return
+	}
+
+	rabbitCtx, rabbitCnl := context.WithTimeout(ctx, time.Second*10)
+	defer rabbitCnl()
+
+	err = rabbitClient.Write(rabbitCtx, handlerdto.RabbitMQData{
+		RequestID: key,
+		UserID:    data.UserID,
+		Chance:    data.Chance,
+		Duration:  data.Duration,
+	})
+	if err != nil {
+		log.Println(key, err)
+	}
+
+	log.Printf("send to RabbitMQ %s\n", key)
 }

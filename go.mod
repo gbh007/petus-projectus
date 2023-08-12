@@ -7,6 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mailru/go-clickhouse/v2 v2.1.0
+	github.com/rabbitmq/amqp091-go v1.8.1
 	github.com/segmentio/kafka-go v0.4.42
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0

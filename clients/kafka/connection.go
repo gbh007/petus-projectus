@@ -9,7 +9,7 @@ import (
 func (c *Client) Connect(createTopic bool) error {
 	conn, err := kafka.Dial("tcp", c.addr)
 	if err != nil {
-		return fmt.Errorf("%w: Connect: %w", ErrKafkaCLient, err)
+		return fmt.Errorf("%w: Connect: %w", ErrKafkaClient, err)
 	}
 
 	c.kafkaConn = conn
@@ -25,7 +25,7 @@ func (c *Client) Connect(createTopic bool) error {
 
 		err = c.kafkaConn.CreateTopics(topicConfigs...)
 		if err != nil {
-			return fmt.Errorf("%w: Connect: %w: %w", ErrKafkaCLient, ErrFailToCreateTopic, err)
+			return fmt.Errorf("%w: Connect: %w: %w", ErrKafkaClient, ErrFailToCreateTopic, err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (c *Client) Close() error {
 		return nil
 	}
 
-	err := fmt.Errorf("%w: Close", ErrKafkaCLient)
+	err := fmt.Errorf("%w: Close", ErrKafkaClient)
 
 	for _, e := range errs {
 		err = fmt.Errorf("%w: %w", err, e)

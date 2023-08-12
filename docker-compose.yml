@@ -27,10 +27,20 @@ services:
       context: .
       dockerfile: ./docker/Dockerfile-handler
     restart: always
-    command: "-db-user log_user -db-pass log_pwd -db-addr clickhouse:8123 -db-name log_db"
+    command: "-db-user log_user -db-pass log_pwd -db-addr clickhouse:8123 -db-name log_db -rabbitmq-user task -rabbitmq-pass task_pwd"
     depends_on:
       - kafka
       - clickhouse
+      - rabbitmq
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile-worker
+    restart: always
+    command: "-rabbitmq-user task -rabbitmq-pass task_pwd"
+    depends_on:
+      - rabbitmq
 
   mariadb:
     image: mariadb:11
@@ -75,18 +85,27 @@ services:
     image: clickhouse/clickhouse-server:22.2
     restart: always
     environment:
-        CLICKHOUSE_USER: admin
-        CLICKHOUSE_PASSWORD: 123
-        CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-        CLICKHOUSE_DB: default
-        CLICKHOUSE_UID: 0
-        CLICKHOUSE_GID: 0
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: 123
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_UID: 0
+      CLICKHOUSE_GID: 0
     volumes:
-        - "clickhouse-log:/var/log/clickhouse-server"
-        - "clickhouse-data:/var/lib/clickhouse"
-        - "./deployments/clickhouse-db-dev-init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "clickhouse-log:/var/log/clickhouse-server"
+      - "clickhouse-data:/var/lib/clickhouse"
+      - "./deployments/clickhouse-db-dev-init.sql:/docker-entrypoint-initdb.d/init.sql"
     ports:
       - 18123:8123
+
+  rabbitmq:
+    image: rabbitmq:3.12
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: task
+      RABBITMQ_DEFAULT_PASS: task_pwd
+    volumes:
+      - "rabbitmq-data:/var/lib/rabbitmq"
 
 volumes:
   mariadb:
@@ -97,4 +116,4 @@ volumes:
   zookeeper-log:
   clickhouse-data:
   clickhouse-log:
-   
+  rabbitmq-data:

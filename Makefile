@@ -11,6 +11,7 @@ build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/gate ./cmd/gate
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/auth ./cmd/authserver
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/handler ./cmd/handler
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/worker ./cmd/worker
 
 compose: build
 	docker-compose up -d --build
