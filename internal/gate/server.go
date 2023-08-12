@@ -5,6 +5,7 @@ import (
 	"app/internal/gate/gatepb"
 	"app/internal/kafka"
 	"context"
+	"time"
 
 	"google.golang.org/grpc/peer"
 )
@@ -33,6 +34,7 @@ func (s *gateServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gate
 	kData := gatedto.KafkaData{
 		SessionToken: token,
 		Action:       gatedto.ActionLogin,
+		RequestTime:  time.Now().UTC(),
 	}
 
 	p, ok := peer.FromContext(ctx)
@@ -63,7 +65,8 @@ func (s *gateServer) Register(ctx context.Context, req *gatepb.RegisterRequest) 
 	}
 
 	kData := gatedto.KafkaData{
-		Action: gatedto.ActionRegister,
+		Action:      gatedto.ActionRegister,
+		RequestTime: time.Now().UTC(),
 	}
 
 	p, ok := peer.FromContext(ctx)
@@ -109,6 +112,7 @@ func (s *gateServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*ga
 		Action:       gatedto.ActionButton,
 		Chance:       req.GetChance(),
 		Duration:     req.GetDuration(),
+		RequestTime:  time.Now().UTC(),
 	}
 
 	p, ok := peer.FromContext(ctx)

@@ -15,6 +15,9 @@ func getMigration(dialect int) (string, error) {
 	case MySQL:
 		return techMigrationMariaDB, nil
 
+	case ClickHouse:
+		return techMigrationClickHouse, nil
+
 	default:
 		return "", UnknownDialect
 	}
@@ -37,5 +40,17 @@ CREATE TABLE IF NOT EXISTS migrations(
     hash        TEXT        NOT NULL,
     applied     TIMESTAMP   NOT NULL
 );
+`
+
+	// Данное решение прототип.
+	techMigrationClickHouse = `
+CREATE TABLE IF NOT EXISTS migrations(
+    id          Int64         NOT NULL,
+    filename    String        NOT NULL,
+    hash        String        NOT NULL,
+    applied     DateTime64(9, 'UTC')   NOT NULL
+)
+ENGINE = MergeTree()
+ORDER BY id;
 `
 )

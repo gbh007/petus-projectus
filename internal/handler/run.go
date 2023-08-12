@@ -2,8 +2,10 @@ package handler
 
 import (
 	"app/internal/gate/gatedto"
+	"app/internal/handler/storage"
 	"app/internal/kafka"
 	"context"
+	"database/sql"
 	"log"
 )
 
@@ -14,7 +16,11 @@ type KafkaConfig struct {
 	NumPartitions int
 }
 
-func Run(ctx context.Context, kCnf KafkaConfig) error {
+type DBConfig struct {
+	Username, Password, Addr, DatabaseName string
+}
+
+func Run(ctx context.Context, kCnf KafkaConfig, dbCnf DBConfig) error {
 	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
 	err := kafkaClient.Connect(kCnf.NumPartitions > 0)
 	if err != nil {
@@ -22,6 +28,11 @@ func Run(ctx context.Context, kCnf KafkaConfig) error {
 	}
 
 	defer kafkaClient.Close()
+
+	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
+	if err != nil {
+		return err
+	}
 
 label1:
 	for {
@@ -38,13 +49,39 @@ label1:
 			}
 		}
 
-		handle(ctx, key, data)
+		handle(ctx, key, data, db)
 	}
 
 	return nil
 }
 
-func handle(ctx context.Context, key string, data *gatedto.KafkaData) {
-	// FIXME: необходима реализация
+func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storage.Database) {
+	// FIXME: необходима полная реализация
 	log.Printf("accept %s %#+v\n", key, data)
+
+	err := db.InsertUserLog(ctx, &storage.UserLog{
+		RequestID: key,
+		Addr:      data.Addr,
+		UserID: sql.NullInt64{
+			Int64: data.UserID,
+			Valid: data.UserID != 0,
+		},
+		SessionToken: sql.NullString{
+			String: data.SessionToken,
+			Valid:  data.SessionToken != "",
+		},
+		Action: data.Action,
+		Chance: sql.NullInt64{
+			Int64: data.Chance,
+			Valid: data.Chance != 0,
+		},
+		Duration: sql.NullInt64{
+			Int64: data.Duration,
+			Valid: data.Duration != 0,
+		},
+		RequestTime: data.RequestTime,
+	})
+	if err != nil {
+		log.Println(key, err)
+	}
 }
