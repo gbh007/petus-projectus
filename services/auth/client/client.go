@@ -1,14 +1,14 @@
-package gate
+package client
 
 import (
-	"app/internal/auth/authpb"
+	"app/services/auth/internal/authpb"
 	"context"
 	"errors"
 
 	"google.golang.org/grpc"
 )
 
-type authClient struct {
+type Client struct {
 	client authpb.AuthClient
 	conn   *grpc.ClientConn
 }
@@ -17,8 +17,8 @@ type UserInfo struct {
 	ID int64
 }
 
-func newAuthClient(addr string) (*authClient, error) {
-	c := new(authClient)
+func New(addr string) (*Client, error) {
+	c := new(Client)
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
@@ -31,7 +31,7 @@ func newAuthClient(addr string) (*authClient, error) {
 	return c, nil
 }
 
-func (c *authClient) Close() error {
+func (c *Client) Close() error {
 	if c.conn == nil {
 		return errors.New("no connection")
 	}
@@ -39,7 +39,7 @@ func (c *authClient) Close() error {
 	return c.conn.Close()
 }
 
-func (c *authClient) Login(ctx context.Context, login, pass string) (string, error) {
+func (c *Client) Login(ctx context.Context, login, pass string) (string, error) {
 	res, err := c.client.Login(ctx, &authpb.LoginRequest{
 		Login:    login,
 		Password: pass,
@@ -58,7 +58,7 @@ func (c *authClient) Login(ctx context.Context, login, pass string) (string, err
 	return res.GetToken(), nil
 }
 
-func (c *authClient) Register(ctx context.Context, login, pass string) error {
+func (c *Client) Register(ctx context.Context, login, pass string) error {
 	res, err := c.client.Register(ctx, &authpb.RegisterRequest{
 		Login:    login,
 		Password: pass,
@@ -78,7 +78,7 @@ func (c *authClient) Register(ctx context.Context, login, pass string) error {
 	return nil
 }
 
-func (c *authClient) Info(ctx context.Context, token string) (*UserInfo, error) {
+func (c *Client) Info(ctx context.Context, token string) (*UserInfo, error) {
 	res, err := c.client.Info(ctx, &authpb.InfoRequest{
 		Token: token,
 	})

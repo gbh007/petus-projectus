@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package gate;
 
-option go_package = "internal/gate/gatepb";
+option go_package = "services/gate/internal/gatepb";
 
 service Gate {
   rpc Login(LoginRequest) returns (LoginResponse) {}

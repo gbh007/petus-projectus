@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/internal/gate"
+	"app/services/gate/server"
 	"context"
 	"flag"
 	"fmt"
@@ -33,9 +33,9 @@ func main() {
 
 	log.Println("server start")
 
-	err := gate.Run(ctx,
+	err := server.Run(ctx,
 		fmt.Sprintf("%s:%d", *host, *port), *authAddr,
-		gate.KafkaConfig{
+		server.KafkaConfig{
 			Addr:          *kafkaAddr,
 			Topic:         *kafkaTopic,
 			NumPartitions: *kafkaNumP,

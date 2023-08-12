@@ -1,4 +1,4 @@
-package gate
+package server
 
 type KafkaConfig struct {
 	Topic         string

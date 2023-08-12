@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"app/internal/auth/storage/migration"
 	"app/internal/migrator"
+	"app/services/auth/internal/storage/migration"
 	"context"
 	"errors"
 	"fmt"

@@ -1,8 +1,8 @@
-package auth
+package server
 
 import (
-	"app/internal/auth/authpb"
-	"app/internal/auth/storage"
+	"app/services/auth/internal/authpb"
+	"app/services/auth/internal/storage"
 	"context"
 	"strings"
 )

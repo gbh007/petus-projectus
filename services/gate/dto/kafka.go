@@ -1,4 +1,4 @@
-package gatedto
+package dto
 
 import "time"
 

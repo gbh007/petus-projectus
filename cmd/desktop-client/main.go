@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/internal/desktop"
+	"app/ui/desktop"
 	"context"
 	"flag"
 	"fmt"

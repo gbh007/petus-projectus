@@ -1,8 +1,9 @@
-package gate
+package server
 
 import (
-	"app/internal/gate/gatepb"
-	"app/internal/kafka"
+	"app/clients/kafka"
+	authClient "app/services/auth/client"
+	"app/services/gate/internal/gatepb"
 	"context"
 	"crypto/sha256"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 )
 
 func Run(ctx context.Context, selfAddr, authAddr string, kCnf KafkaConfig) error {
-	authClient, err := newAuthClient(authAddr)
+	authClient, err := authClient.New(authAddr)
 	if err != nil {
 		return err
 	}

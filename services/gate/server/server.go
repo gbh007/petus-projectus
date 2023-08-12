@@ -1,9 +1,10 @@
-package gate
+package server
 
 import (
-	"app/internal/gate/gatedto"
-	"app/internal/gate/gatepb"
-	"app/internal/kafka"
+	"app/clients/kafka"
+	authClient "app/services/auth/client"
+	gatedto "app/services/gate/dto"
+	"app/services/gate/internal/gatepb"
 	"context"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 type gateServer struct {
 	gatepb.GateServer
 
-	auth  *authClient
+	auth  *authClient.Client
 	kafka *kafka.Client
 }
 

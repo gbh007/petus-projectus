@@ -1,21 +1,24 @@
-package desktop
+package client
 
 import (
-	"app/internal/gate/gatepb"
+	"app/services/gate/internal/gatepb"
 	"context"
 	"errors"
 
 	"google.golang.org/grpc"
 )
 
-type controller_gRPC struct {
+type Client struct {
 	client gatepb.GateClient
 	conn   *grpc.ClientConn
-	token  string
 }
 
-func newController_gRPC(addr string) (*controller_gRPC, error) {
-	c := new(controller_gRPC)
+type UserInfo struct {
+	ID int64
+}
+
+func New(addr string) (*Client, error) {
+	c := new(Client)
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
@@ -28,7 +31,7 @@ func newController_gRPC(addr string) (*controller_gRPC, error) {
 	return c, nil
 }
 
-func (c *controller_gRPC) Close() error {
+func (c *Client) Close() error {
 	if c.conn == nil {
 		return errors.New("no connection")
 	}
@@ -36,29 +39,26 @@ func (c *controller_gRPC) Close() error {
 	return c.conn.Close()
 }
 
-func (c *controller_gRPC) Login(ctx context.Context, login, pass string) error {
+func (c *Client) Login(ctx context.Context, login, pass string) (string, error) {
 	res, err := c.client.Login(ctx, &gatepb.LoginRequest{
 		Login:    login,
 		Password: pass,
 	})
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if res.GetError().GetHas() {
-		// code := res.GetError().GetCode()
 		err := errors.New(res.GetError().GetText())
 
-		return err
+		return "", err
 	}
 
-	c.token = res.GetToken()
-
-	return nil
+	return res.GetToken(), nil
 }
 
-func (c *controller_gRPC) Register(ctx context.Context, login, pass string) error {
+func (c *Client) Register(ctx context.Context, login, pass string) error {
 	res, err := c.client.Register(ctx, &gatepb.RegisterRequest{
 		Login:    login,
 		Password: pass,
@@ -69,7 +69,6 @@ func (c *controller_gRPC) Register(ctx context.Context, login, pass string) erro
 	}
 
 	if res.GetError().GetHas() {
-		// code := res.GetError().GetCode()
 		err := errors.New(res.GetError().GetText())
 
 		return err
@@ -78,10 +77,10 @@ func (c *controller_gRPC) Register(ctx context.Context, login, pass string) erro
 	return nil
 }
 
-func (c *controller_gRPC) ButtonClick(ctx context.Context, duration, chance int64) error {
+func (c *Client) ButtonClick(ctx context.Context, token string, duration, chance int64) error {
 	res, err := c.client.Button(ctx, &gatepb.ButtonRequest{
 		Duration: duration,
-		Token:    c.token,
+		Token:    token,
 		Chance:   chance,
 	})
 
@@ -90,7 +89,6 @@ func (c *controller_gRPC) ButtonClick(ctx context.Context, duration, chance int6
 	}
 
 	if res.GetError().GetHas() {
-		// code := res.GetError().GetCode()
 		err := errors.New(res.GetError().GetText())
 
 		return err

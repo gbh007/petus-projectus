@@ -1,7 +1,7 @@
-package auth
+package server
 
 import (
-	"app/internal/auth/storage"
+	"app/services/auth/internal/storage"
 	"context"
 	"database/sql"
 	"errors"

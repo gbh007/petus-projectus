@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/internal/auth"
+	"app/services/auth/server"
 	"context"
 	"flag"
 	"fmt"
@@ -32,9 +32,9 @@ func main() {
 
 	log.Println("server start")
 
-	err := auth.Run(ctx,
+	err := server.Run(ctx,
 		fmt.Sprintf("%s:%d", *host, *port),
-		auth.DBConfig{
+		server.DBConfig{
 			Username:     *dbUsername,
 			Password:     *dbPassword,
 			Addr:         *dbAddr,

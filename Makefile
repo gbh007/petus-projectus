@@ -14,3 +14,6 @@ build:
 
 compose: build
 	docker-compose up -d --build
+
+desktop:
+	go run cmd/desktop-client/main.go

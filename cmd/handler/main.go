@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/internal/handler"
+	"app/services/handler/server"
 	"context"
 	"flag"
 	"log"
@@ -32,13 +32,14 @@ func main() {
 
 	log.Println("server start")
 
-	err := handler.Run(ctx,
-		handler.KafkaConfig{
+	err := server.Run(
+		ctx,
+		server.KafkaConfig{
 			Addr:    *kafkaAddr,
 			Topic:   *kafkaTopic,
 			GroupID: *kafkaGroup,
 		},
-		handler.DBConfig{
+		server.DBConfig{
 			Username:     *dbUsername,
 			Password:     *dbPassword,
 			Addr:         *dbAddr,

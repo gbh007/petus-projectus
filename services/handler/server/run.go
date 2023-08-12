@@ -1,9 +1,9 @@
-package handler
+package server
 
 import (
-	"app/internal/gate/gatedto"
-	"app/internal/handler/storage"
-	"app/internal/kafka"
+	"app/clients/kafka"
+	gatedto "app/services/gate/dto"
+	"app/services/handler/internal/storage"
 	"context"
 	"database/sql"
 	"log"
