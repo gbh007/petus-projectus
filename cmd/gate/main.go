@@ -14,7 +14,8 @@ func main() {
 	host := flag.String("h", "localhost", "Хост сервера")
 	port := flag.Int64("p", 14281, "Порт сервера")
 
-	authAddr := flag.String("auth", "auth:50051", "Адрес сервиса учетных записей")
+	authAddr := flag.String("addr-auth", "auth:50051", "Адрес сервиса учетных записей")
+	notificationAddr := flag.String("addr-notification", "notification:50051", "Адрес сервиса уведомлений")
 
 	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Адрес сервера кафки")
 	kafkaTopic := flag.String("kafka-topic", "gate", "Топик сервера кафки")
@@ -33,8 +34,13 @@ func main() {
 
 	log.Println("server start")
 
-	err := server.Run(ctx,
-		fmt.Sprintf("%s:%d", *host, *port), *authAddr,
+	err := server.Run(
+		ctx,
+		server.CommunicationConfig{
+			SelfAddress:         fmt.Sprintf("%s:%d", *host, *port),
+			AuthAddress:         *authAddr,
+			NotificationAddress: *notificationAddr,
+		},
 		server.KafkaConfig{
 			Addr:          *kafkaAddr,
 			Topic:         *kafkaTopic,

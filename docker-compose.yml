@@ -10,10 +10,11 @@ services:
     restart: always
     ports:
       - 14281:14281
-    command: "-h 0.0.0.0 -auth auth:50051"
+    command: "-h 0.0.0.0"
     depends_on:
       - auth
       - kafka
+      - notification
 
   auth:
     build:

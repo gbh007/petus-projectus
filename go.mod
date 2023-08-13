@@ -5,6 +5,7 @@ go 1.20
 require (
 	fyne.io/fyne/v2 v2.3.5
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/golang/protobuf v1.5.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mailru/go-clickhouse/v2 v2.1.0
 	github.com/rabbitmq/amqp091-go v1.8.1
@@ -26,7 +27,6 @@ require (
 	github.com/go-text/typesetting v0.0.0-20230405155246-bf9c697c6e16 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect

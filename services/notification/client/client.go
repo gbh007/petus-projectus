@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Client struct {
@@ -43,13 +44,72 @@ func (c *Client) New(ctx context.Context, userID int64, n *Notification) error {
 	res, err := c.client.New(ctx, &pb.NewRequest{
 		UserID: userID,
 		Data: &pb.NotificationData{
-			Kind:  n.Kind,
-			Level: n.Level,
-			Title: n.Title,
-			Body:  n.Body,
+			Kind:    n.Kind,
+			Level:   n.Level,
+			Title:   n.Title,
+			Body:    n.Body,
+			Created: timestamppb.New(n.Created),
 		},
 	})
 
+	if err != nil {
+		return err
+	}
+
+	if res.GetError() != nil {
+		err := errors.New(res.GetError().GetText())
+
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) List(ctx context.Context, userID int64) ([]*Notification, error) {
+	res, err := c.client.List(ctx, &pb.ListRequest{UserID: userID})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.GetError() != nil {
+		err := errors.New(res.GetError().GetText())
+
+		return nil, err
+	}
+
+	notifications := make([]*Notification, len(res.GetList()))
+
+	for index, raw := range res.GetList() {
+		notifications[index] = &Notification{
+			ID:      raw.GetId(),
+			Kind:    raw.GetKind(),
+			Level:   raw.GetLevel(),
+			Title:   raw.GetTitle(),
+			Body:    raw.GetBody(),
+			Created: raw.GetCreated().AsTime(),
+		}
+	}
+
+	return notifications, nil
+}
+
+func (c *Client) Read(ctx context.Context, id int64) error {
+	res, err := c.client.Read(ctx, &pb.ReadRequest{Id: id})
+	if err != nil {
+		return err
+	}
+
+	if res.GetError() != nil {
+		err := errors.New(res.GetError().GetText())
+
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) ReadAll(ctx context.Context, userID int64) error {
+	res, err := c.client.ReadAll(ctx, &pb.ReadAllRequest{UserID: userID})
 	if err != nil {
 		return err
 	}

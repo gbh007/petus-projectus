@@ -1,5 +1,7 @@
 package client
 
+import "time"
+
 const (
 	ButtonKind   = "button"
 	SuccessLevel = "success"
@@ -7,8 +9,10 @@ const (
 )
 
 type Notification struct {
-	Kind  string
-	Level string
-	Title string
-	Body  string
+	ID      int64
+	Kind    string
+	Level   string
+	Title   string
+	Body    string
+	Created time.Time
 }

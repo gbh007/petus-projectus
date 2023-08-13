@@ -4,6 +4,7 @@ import (
 	"app/clients/kafka"
 	authClient "app/services/auth/client"
 	"app/services/gate/internal/gatepb"
+	notificationClient "app/services/notification/client"
 	"context"
 	"crypto/sha256"
 	"fmt"
@@ -15,30 +16,38 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func Run(ctx context.Context, selfAddr, authAddr string, kCnf KafkaConfig) error {
-	authClient, err := authClient.New(authAddr)
+func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) error {
+	authClient, err := authClient.New(comCnf.AuthAddress)
 	if err != nil {
 		return err
 	}
 
 	defer authClient.Close()
 
-	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
-	err = kafkaClient.Connect(kCnf.NumPartitions > 0)
+	notificationClient, err := notificationClient.New(comCnf.AuthAddress)
+	if err != nil {
+		return err
+	}
+
+	defer notificationClient.Close()
+
+	kafkaClient := kafka.New(kafkaCnf.Addr, kafkaCnf.Topic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
+	err = kafkaClient.Connect(kafkaCnf.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
 	defer kafkaClient.Close()
 
-	lis, err := net.Listen("tcp", selfAddr)
+	lis, err := net.Listen("tcp", comCnf.SelfAddress)
 	if err != nil {
 		return err
 	}
 
-	s := &gateServer{
-		auth:  authClient,
-		kafka: kafkaClient,
+	s := &pbServer{
+		auth:         authClient,
+		kafka:        kafkaClient,
+		notification: notificationClient,
 	}
 
 	grpcServer := grpc.NewServer()

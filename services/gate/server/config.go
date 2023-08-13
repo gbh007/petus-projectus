@@ -6,3 +6,9 @@ type KafkaConfig struct {
 	Addr          string
 	NumPartitions int
 }
+
+type CommunicationConfig struct {
+	SelfAddress         string
+	AuthAddress         string
+	NotificationAddress string
+}

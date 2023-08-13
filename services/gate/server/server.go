@@ -5,20 +5,22 @@ import (
 	authClient "app/services/auth/client"
 	gatedto "app/services/gate/dto"
 	"app/services/gate/internal/gatepb"
+	notificationClient "app/services/notification/client"
 	"context"
 	"time"
 
 	"google.golang.org/grpc/peer"
 )
 
-type gateServer struct {
+type pbServer struct {
 	gatepb.GateServer
 
-	auth  *authClient.Client
-	kafka *kafka.Client
+	auth         *authClient.Client
+	notification *notificationClient.Client
+	kafka        *kafka.Client
 }
 
-func (s *gateServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
+func (s *pbServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
 	logRoute(ctx, "login")
 
 	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
@@ -51,7 +53,7 @@ func (s *gateServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gate
 	}, nil
 }
 
-func (s *gateServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*gatepb.RegisterResponse, error) {
+func (s *pbServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*gatepb.RegisterResponse, error) {
 	logRoute(ctx, "register")
 
 	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
@@ -81,7 +83,7 @@ func (s *gateServer) Register(ctx context.Context, req *gatepb.RegisterRequest) 
 	return new(gatepb.RegisterResponse), nil
 }
 
-func (s *gateServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*gatepb.ButtonResponse, error) {
+func (s *pbServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*gatepb.ButtonResponse, error) {
 	logRoute(ctx, "button")
 
 	if req.GetDuration() < 0 {
