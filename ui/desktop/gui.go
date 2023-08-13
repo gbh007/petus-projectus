@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"context"
+	"log"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -124,6 +125,8 @@ func makeAlert() (fyne.CanvasObject, func(string)) {
 func renderButtonArea(ctx context.Context, c Controller) fyne.CanvasObject {
 	durationEntry := widget.NewEntry()
 	chanceEntry := widget.NewEntry()
+	asyncBool := binding.NewBool()
+	async := widget.NewCheckWithData("Асинхронно", asyncBool)
 
 	alertBox, setError := makeAlert()
 
@@ -160,12 +163,21 @@ func renderButtonArea(ctx context.Context, c Controller) fyne.CanvasObject {
 			return
 		}
 
-		err = c.ButtonClick(ctx, duration, chance)
-		if err != nil {
-			setError(err.Error())
-			alertBox.Show()
+		if a, err := asyncBool.Get(); err == nil && a {
+			go func() {
+				asyncErr := c.ButtonClick(ctx, duration, chance)
+				if asyncErr != nil {
+					log.Println(err)
+				}
+			}()
+		} else {
+			err = c.ButtonClick(ctx, duration, chance)
+			if err != nil {
+				setError(err.Error())
+				alertBox.Show()
 
-			return
+				return
+			}
 		}
 	}
 
@@ -174,6 +186,7 @@ func renderButtonArea(ctx context.Context, c Controller) fyne.CanvasObject {
 	form := widget.NewForm(
 		widget.NewFormItem("Продолжительность", durationEntry),
 		widget.NewFormItem("Вероятность провала", chanceEntry),
+		widget.NewFormItem("", async),
 		widget.NewFormItem("", widget.NewButton("Отправить запрос", registerCallback)),
 	)
 

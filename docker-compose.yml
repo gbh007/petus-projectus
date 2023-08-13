@@ -34,9 +34,9 @@ services:
         BINARY_PATH: _build/handler
     restart: always
     command: "-rabbitmq-user task -rabbitmq-pass task_pwd"
-    # deploy:
-    #   mode: replicated
-    #   replicas: 3
+    deploy:
+      mode: replicated
+      replicas: 3
     depends_on:
       - kafka
       - rabbitmq
@@ -49,10 +49,9 @@ services:
         BINARY_PATH: _build/log
     restart: always
     command: "-db-user log_user -db-pass log_pwd -db-addr clickhouse:8123 -db-name log_db"
-    # deploy:
-    #   mode: replicated
-    #   replicas: 3
-    #   endpoint_mode: dnsrr
+    deploy:
+      mode: replicated
+      replicas: 3
     depends_on:
       - kafka
       - clickhouse
@@ -65,11 +64,26 @@ services:
         BINARY_PATH: _build/worker
     restart: always
     command: "-rabbitmq-user task -rabbitmq-pass task_pwd"
-    # deploy:
-    #   mode: replicated
-    #   replicas: 2
+    deploy:
+      mode: replicated
+      replicas: 2
     depends_on:
       - rabbitmq
+      - notification
+
+  notification:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/notification
+    restart: always
+    command: "-h 0.0.0.0 -db-user notification_user -db-pass notification_pwd -db-addr mariadb:3306 -db-name notification_db"
+    deploy:
+      mode: replicated
+      replicas: 2
+    depends_on:
+      - mariadb
 
   mariadb:
     image: mariadb:11

@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-// import "google/protobuf/timestamp.proto";
-
 package gate;
 
 option go_package = "services/gate/internal/gatepb";

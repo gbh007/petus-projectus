@@ -15,6 +15,8 @@ func main() {
 	rabbitMQAddr := flag.String("rabbitmq-addr", "rabbitmq:5672", "Адрес RabbitMQ")
 	rabbitMQName := flag.String("rabbitmq-name", "task", "Имя очереди RabbitMQ для соединения")
 
+	notificationAddr := flag.String("notification", "notification:50051", "Адрес сервиса уведомлений")
+
 	flag.Parse()
 
 	ctx, cancelNotify := signal.NotifyContext(
@@ -37,6 +39,7 @@ func main() {
 			Addr:      *rabbitMQAddr,
 			QueueName: *rabbitMQName,
 		},
+		*notificationAddr,
 	)
 	if err != nil {
 		log.Println(err)

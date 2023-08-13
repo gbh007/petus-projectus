@@ -4,8 +4,6 @@
 // 	protoc        v3.12.4
 // source: gate.proto
 
-// import "google/protobuf/timestamp.proto";
-
 package gatepb
 
 import (
