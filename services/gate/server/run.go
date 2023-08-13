@@ -3,6 +3,7 @@ package server
 import (
 	"app/clients/kafka"
 	authClient "app/services/auth/client"
+	"app/services/gate/dto"
 	"app/services/gate/internal/pb"
 	notificationClient "app/services/notification/client"
 	"context"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
 
@@ -67,15 +69,32 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 	return nil
 }
 
-func logRoute(ctx context.Context, routeName string) {
-	addr := "unknown"
+func logRoute(ctx context.Context, action string) (string, dto.KafkaData) {
+	requestID := randomSHA256String()
+
+	kd := dto.KafkaData{
+		Action:      action,
+		Addr:        "unknown",
+		RequestTime: time.Now().UTC(),
+	}
 
 	p, ok := peer.FromContext(ctx)
 	if ok {
-		addr = p.Addr.String()
+		kd.Addr = p.Addr.String()
 	}
 
-	log.Printf("handle %s %s\n", routeName, addr)
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		if realIPs := md.Get("X-Real-IP"); len(realIPs) > 0 {
+			kd.RealIP = realIPs[0]
+		}
+
+		kd.ForwardedFor = md.Get("X-Forwarded-For")
+	}
+
+	log.Printf("%s handle %s %s\n", requestID, action, kd.Addr)
+
+	return requestID, kd
 }
 
 func randomSHA256String() string {

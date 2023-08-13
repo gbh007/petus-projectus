@@ -9,8 +9,12 @@ import (
 	"strings"
 )
 
-// Неверный логин/пароль
-var LoginOrPasswordIncorrectErr = errors.New("login or password incorrect")
+var (
+	// Неверный логин/пароль
+	LoginOrPasswordIncorrectErr = errors.New("login or password incorrect")
+	// Сессия не найдена
+	SessionNotFoundErr = errors.New("session not found")
+)
 
 // createUser - создает нового пользователя
 func (s *authServer) createUser(ctx context.Context, login, password string) (int64, error) {
@@ -86,6 +90,10 @@ func (s *authServer) checkUser(ctx context.Context, login, password string) (*st
 func (s *authServer) getUser(ctx context.Context, token string) (*storage.User, error) {
 	session, err := s.db.GetSessionByToken(ctx, token)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, SessionNotFoundErr
+		}
+
 		return nil, err
 	}
 

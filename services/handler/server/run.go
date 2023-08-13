@@ -51,8 +51,19 @@ label1:
 
 func handle(ctx context.Context, key string, data *gatedto.KafkaData, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
 	log.Printf("accept %s %#+v\n", key, data)
-	if data.Action != gatedto.ActionButton {
+
+	switch {
+	case data.Action != gatedto.ActionButton:
+		log.Printf("skip %s - not button\n", key)
+
 		return
+
+	// Ошибки не обрабатываем
+	case data.ErrorText != "":
+		log.Printf("skip %s - has error\n", key)
+
+		return
+
 	}
 
 	rabbitCtx, rabbitCnl := context.WithTimeout(ctx, time.Second*10)

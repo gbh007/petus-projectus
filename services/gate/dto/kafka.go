@@ -18,4 +18,9 @@ type KafkaData struct {
 	Chance       int64     `json:"chance,omitempty"`
 	Duration     int64     `json:"duration,omitempty"`
 	RequestTime  time.Time `json:"request_time,omitempty"`
+
+	// FIXME: хранить в БД
+	RealIP       string   `json:"real_ip,omitempty"`
+	ForwardedFor []string `json:"forwarded_for,omitempty"`
+	ErrorText    string   `json:"error,omitempty"`
 }

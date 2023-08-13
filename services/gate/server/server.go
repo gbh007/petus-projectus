@@ -7,9 +7,9 @@ import (
 	"app/services/gate/internal/pb"
 	notificationClient "app/services/notification/client"
 	"context"
-	"time"
+	"fmt"
+	"log"
 
-	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -33,10 +33,16 @@ func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.User
 }
 
 func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	logRoute(ctx, "login")
+	requestID, kData := logRoute(ctx, gatedto.ActionLogin)
+	defer func() {
+		// Ошибка не имеет значения в данном случае
+		_ = s.kafka.Write(ctx, requestID, kData)
+	}()
 
 	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
+		kData.ErrorText = err.Error()
+
 		return &pb.LoginResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -45,19 +51,7 @@ func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRe
 		}, nil
 	}
 
-	kData := gatedto.KafkaData{
-		SessionToken: token,
-		Action:       gatedto.ActionLogin,
-		RequestTime:  time.Now().UTC(),
-	}
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		kData.Addr = p.Addr.String()
-	}
-
-	// Ошибка не имеет значения в данном случае
-	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
+	kData.SessionToken = token
 
 	return &pb.LoginResponse{
 		Token: token,
@@ -65,10 +59,16 @@ func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRe
 }
 
 func (s *pbServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	logRoute(ctx, "register")
+	requestID, kData := logRoute(ctx, gatedto.ActionRegister)
+	defer func() {
+		// Ошибка не имеет значения в данном случае
+		_ = s.kafka.Write(ctx, requestID, kData)
+	}()
 
 	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
+		kData.ErrorText = err.Error()
+
 		return &pb.RegisterResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -77,38 +77,29 @@ func (s *pbServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.R
 		}, nil
 	}
 
-	kData := gatedto.KafkaData{
-		Action:      gatedto.ActionRegister,
-		RequestTime: time.Now().UTC(),
-	}
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		kData.Addr = p.Addr.String()
-	}
-
-	// Ошибка не имеет значения в данном случае
-	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
-
 	return new(pb.RegisterResponse), nil
 }
 
 func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.ButtonResponse, error) {
-	logRoute(ctx, "button")
+	requestID, kData := logRoute(ctx, gatedto.ActionButton)
 
-	if req.GetDuration() < 0 {
-		return &pb.ButtonResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: "invalid duration",
-			},
-		}, nil
-	}
+	sendToKafka := false
 
-	req.GetChance()
+	defer func() {
+		if sendToKafka {
+			log.Println(requestID, "already send")
 
-	info, err := s.authInfo(ctx, req.GetToken())
-	if err != nil {
+			return
+		}
+
+		// Ошибка не имеет значения в данном случае
+		_ = s.kafka.Write(ctx, requestID, kData)
+	}()
+
+	if req.GetDuration() <= 0 {
+		err := fmt.Errorf("invalid duration %d", req.GetDuration())
+		kData.ErrorText = err.Error()
+
 		return &pb.ButtonResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -117,21 +108,27 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 		}, nil
 	}
 
-	kData := gatedto.KafkaData{
-		UserID:       info.ID,
-		SessionToken: req.GetToken(),
-		Action:       gatedto.ActionButton,
-		Chance:       req.GetChance(),
-		Duration:     req.GetDuration(),
-		RequestTime:  time.Now().UTC(),
+	info, err := s.authInfo(ctx, req.GetToken())
+	if err != nil {
+		kData.ErrorText = err.Error()
+
+		return &pb.ButtonResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
 	}
 
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		kData.Addr = p.Addr.String()
-	}
+	kData.UserID = info.ID
+	kData.SessionToken = req.GetToken()
+	kData.Chance = req.GetChance()
+	kData.Duration = req.GetDuration()
 
-	err = s.kafka.Write(ctx, randomSHA256String(), kData)
+	// Данные уже будут записаны ниже
+	sendToKafka = true
+
+	err = s.kafka.Write(ctx, requestID, kData)
 	if err != nil {
 		return &pb.ButtonResponse{
 			Error: &pb.ErrorInfo{
@@ -145,10 +142,16 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 }
 
 func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*pb.NotificationListResponse, error) {
-	logRoute(ctx, "list")
+	requestID, kData := logRoute(ctx, gatedto.ActionList)
+	defer func() {
+		// Ошибка не имеет значения в данном случае
+		_ = s.kafka.Write(ctx, requestID, kData)
+	}()
 
 	info, err := s.authInfo(ctx, req.GetToken())
 	if err != nil {
+		kData.ErrorText = err.Error()
+
 		return &pb.NotificationListResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -157,23 +160,13 @@ func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*
 		}, nil
 	}
 
-	kData := gatedto.KafkaData{
-		Action:       gatedto.ActionList,
-		RequestTime:  time.Now().UTC(),
-		UserID:       info.ID,
-		SessionToken: req.GetToken(),
-	}
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		kData.Addr = p.Addr.String()
-	}
-
-	// Ошибка не имеет значения в данном случае
-	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
+	kData.UserID = info.ID
+	kData.SessionToken = req.GetToken()
 
 	rawNotifications, err := s.notification.List(ctx, info.ID)
 	if err != nil {
+		kData.ErrorText = err.Error()
+
 		return &pb.NotificationListResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -200,10 +193,16 @@ func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*
 }
 
 func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*pb.NotificationReadResponse, error) {
-	logRoute(ctx, "read")
+	requestID, kData := logRoute(ctx, gatedto.ActionRead)
+	defer func() {
+		// Ошибка не имеет значения в данном случае
+		_ = s.kafka.Write(ctx, requestID, kData)
+	}()
 
 	info, err := s.authInfo(ctx, req.GetToken())
 	if err != nil {
+		kData.ErrorText = err.Error()
+
 		return &pb.NotificationReadResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -212,20 +211,8 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 		}, nil
 	}
 
-	kData := gatedto.KafkaData{
-		Action:       gatedto.ActionRead,
-		RequestTime:  time.Now().UTC(),
-		UserID:       info.ID,
-		SessionToken: req.GetToken(),
-	}
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		kData.Addr = p.Addr.String()
-	}
-
-	// Ошибка не имеет значения в данном случае
-	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
+	kData.UserID = info.ID
+	kData.SessionToken = req.GetToken()
 
 	if req.GetAll() {
 		err = s.notification.ReadAll(ctx, info.ID)
@@ -235,6 +222,8 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 	}
 
 	if err != nil {
+		kData.ErrorText = err.Error()
+
 		return &pb.NotificationReadResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -243,5 +232,5 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 		}, nil
 	}
 
-	return &pb.NotificationReadResponse{}, nil
+	return new(pb.NotificationReadResponse), nil
 }
