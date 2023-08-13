@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/services/handler/server"
+	"app/services/log/server"
 	"context"
 	"flag"
 	"log"
@@ -12,12 +12,12 @@ import (
 func main() {
 	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Адрес сервера кафки")
 	kafkaTopic := flag.String("kafka-topic", "gate", "Топик сервера кафки")
-	kafkaGroup := flag.String("kafka-group", "handler", "Группа топика сервера кафки")
+	kafkaGroup := flag.String("kafka-group", "log", "Группа топика сервера кафки")
 
-	rabbitMQUsername := flag.String("rabbitmq-user", "root", "Пользователь RabbitMQ")
-	rabbitMQPassword := flag.String("rabbitmq-pass", "", "Пароль пользователя RabbitMQ")
-	rabbitMQAddr := flag.String("rabbitmq-addr", "rabbitmq:5672", "Адрес RabbitMQ")
-	rabbitMQName := flag.String("rabbitmq-name", "task", "Имя очереди RabbitMQ для соединения")
+	dbUsername := flag.String("db-user", "root", "Пользователь БД")
+	dbPassword := flag.String("db-pass", "", "Пароль пользователя БД")
+	dbAddr := flag.String("db-addr", "localhost:8123", "Адрес БД")
+	dbName := flag.String("db-name", "", "Имя БД для соединения")
 
 	flag.Parse()
 
@@ -39,11 +39,11 @@ func main() {
 			Topic:   *kafkaTopic,
 			GroupID: *kafkaGroup,
 		},
-		server.RabbitMQConfig{
-			Username:  *rabbitMQUsername,
-			Password:  *rabbitMQPassword,
-			Addr:      *rabbitMQAddr,
-			QueueName: *rabbitMQName,
+		server.DBConfig{
+			Username:     *dbUsername,
+			Password:     *dbPassword,
+			Addr:         *dbAddr,
+			DatabaseName: *dbName,
 		},
 	)
 	if err != nil {

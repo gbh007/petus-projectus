@@ -5,7 +5,9 @@ RUN apk update && apk add ca-certificates tzdata
 
 RUN mkdir /app
 
-COPY _build/handler /app/main
+
+ARG BINARY_PATH
+COPY ${BINARY_PATH} /app/main
 
 RUN chmod +x /app/main
 

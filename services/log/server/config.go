@@ -6,6 +6,7 @@ type KafkaConfig struct {
 	Addr          string
 	NumPartitions int
 }
-type RabbitMQConfig struct {
-	Username, Password, Addr, QueueName string
+
+type DBConfig struct {
+	Username, Password, Addr, DatabaseName string
 }

@@ -4,7 +4,9 @@ services:
   gate:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile-gate
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/gate
     restart: always
     ports:
       - 14281:14281
@@ -16,7 +18,9 @@ services:
   auth:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile-auth
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/auth
     restart: always
     command: "-h 0.0.0.0 -db-user auth_user -db-pass auth_pwd -db-addr mariadb:3306 -db-name auth_db"
     depends_on:
@@ -25,20 +29,45 @@ services:
   handler:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile-handler
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/handler
     restart: always
-    command: "-db-user log_user -db-pass log_pwd -db-addr clickhouse:8123 -db-name log_db -rabbitmq-user task -rabbitmq-pass task_pwd"
+    command: "-rabbitmq-user task -rabbitmq-pass task_pwd"
+    # deploy:
+    #   mode: replicated
+    #   replicas: 3
+    depends_on:
+      - kafka
+      - rabbitmq
+
+  log:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/log
+    restart: always
+    command: "-db-user log_user -db-pass log_pwd -db-addr clickhouse:8123 -db-name log_db"
+    # deploy:
+    #   mode: replicated
+    #   replicas: 3
+    #   endpoint_mode: dnsrr
     depends_on:
       - kafka
       - clickhouse
-      - rabbitmq
 
   worker:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile-worker
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/worker
     restart: always
     command: "-rabbitmq-user task -rabbitmq-pass task_pwd"
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
     depends_on:
       - rabbitmq
 

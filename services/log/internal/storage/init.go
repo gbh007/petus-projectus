@@ -2,7 +2,7 @@ package storage
 
 import (
 	"app/internal/migrator"
-	"app/services/handler/internal/storage/migration"
+	"app/services/log/internal/storage/migration"
 	"context"
 	"errors"
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	_ "github.com/mailru/go-clickhouse/v2"
 )
 
-var databaseErr = errors.New("handler database")
+var databaseErr = errors.New("log database")
 
 type Database struct {
 	db *sqlx.DB

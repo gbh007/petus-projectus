@@ -5,14 +5,12 @@ import (
 	"app/clients/rabbitmq"
 	gatedto "app/services/gate/dto"
 	handlerdto "app/services/handler/dto"
-	"app/services/handler/internal/storage"
 	"context"
-	"database/sql"
 	"log"
 	"time"
 )
 
-func Run(ctx context.Context, kCnf KafkaConfig, dbCnf DBConfig, rCnf RabbitMQConfig) error {
+func Run(ctx context.Context, kCnf KafkaConfig, rCnf RabbitMQConfig) error {
 	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
 
 	err := kafkaClient.Connect(kCnf.NumPartitions > 0)
@@ -30,11 +28,6 @@ func Run(ctx context.Context, kCnf KafkaConfig, dbCnf DBConfig, rCnf RabbitMQCon
 
 	defer rabbitClient.Close()
 
-	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
-	if err != nil {
-		return err
-	}
-
 label1:
 	for {
 		data := new(gatedto.KafkaData)
@@ -50,43 +43,14 @@ label1:
 			}
 		}
 
-		handle(ctx, key, data, db, rabbitClient)
+		handle(ctx, key, data, rabbitClient)
 	}
 
 	return nil
 }
 
-// FIXME: рефакторинг сигнатуры
-func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storage.Database, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
-	// FIXME: необходима полная реализация
+func handle(ctx context.Context, key string, data *gatedto.KafkaData, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
 	log.Printf("accept %s %#+v\n", key, data)
-
-	err := db.InsertUserLog(ctx, &storage.UserLog{
-		RequestID: key,
-		Addr:      data.Addr,
-		UserID: sql.NullInt64{
-			Int64: data.UserID,
-			Valid: data.UserID != 0,
-		},
-		SessionToken: sql.NullString{
-			String: data.SessionToken,
-			Valid:  data.SessionToken != "",
-		},
-		Action: data.Action,
-		Chance: sql.NullInt64{
-			Int64: data.Chance,
-			Valid: data.Chance != 0,
-		},
-		Duration: sql.NullInt64{
-			Int64: data.Duration,
-			Valid: data.Duration != 0,
-		},
-		RequestTime: data.RequestTime,
-	})
-	if err != nil {
-		log.Println(key, err)
-	}
-
 	if data.Action != gatedto.ActionButton {
 		return
 	}
@@ -94,7 +58,7 @@ func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storag
 	rabbitCtx, rabbitCnl := context.WithTimeout(ctx, time.Second*10)
 	defer rabbitCnl()
 
-	err = rabbitClient.Write(rabbitCtx, handlerdto.RabbitMQData{
+	err := rabbitClient.Write(rabbitCtx, handlerdto.RabbitMQData{
 		RequestID: key,
 		UserID:    data.UserID,
 		Chance:    data.Chance,

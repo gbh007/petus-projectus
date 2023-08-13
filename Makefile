@@ -1,3 +1,5 @@
+BUILD_ENV = GOOS=linux GOARCH=amd64 CGO_ENABLED=0
+
 proto:
 	protoc -I=. --go_out=. --go-grpc_out=. gate.proto
 	protoc -I=. --go_out=. --go-grpc_out=. auth.proto
@@ -8,13 +10,14 @@ install-proto:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@lates
 
 build:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/gate ./cmd/gate
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/auth ./cmd/authserver
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/handler ./cmd/handler
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o _build/worker ./cmd/worker
+	$(BUILD_ENV) go build -o _build/gate ./cmd/gate
+	$(BUILD_ENV) go build -o _build/auth ./cmd/authserver
+	$(BUILD_ENV) go build -o _build/handler ./cmd/handler
+	$(BUILD_ENV) go build -o _build/worker ./cmd/worker
+	$(BUILD_ENV) go build -o _build/log ./cmd/log
 
 compose: build
-	docker-compose up -d --build
+	docker compose up -d --build
 
 desktop:
 	go run cmd/desktop-client/main.go
