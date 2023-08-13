@@ -60,3 +60,23 @@ func (c *controller_gRPC) ButtonClick(ctx context.Context, duration, chance int6
 
 	return nil
 }
+
+func (c *controller_gRPC) Notifications(ctx context.Context) ([]Notification, error) {
+	data, err := c.client.List(ctx, c.token)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]Notification, len(data))
+	for i, raw := range data {
+		out[i] = Notification{
+			ID:      raw.ID,
+			IsOK:    raw.Level == gateClient.SuccessLevel,
+			Title:   raw.Title,
+			Body:    raw.Body,
+			Created: raw.Created,
+		}
+	}
+
+	return out, nil
+}

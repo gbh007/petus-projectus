@@ -29,6 +29,7 @@ func Run(ctx context.Context, addr string) error {
 		container.NewTabItemWithIcon("Авторизация", theme.LoginIcon(), renderLogin(ctx, controller)),
 		container.NewTabItemWithIcon("Регистрация", theme.AccountIcon(), renderRegister(ctx, controller)),
 		container.NewTabItemWithIcon("Супер-кнопка", theme.HomeIcon(), renderButtonArea(ctx, controller)),
+		container.NewTabItemWithIcon("Уведомления", theme.InfoIcon(), renderNotification(ctx, controller)),
 	)
 	coreBox.Add(authBox)
 
@@ -191,4 +192,59 @@ func renderButtonArea(ctx context.Context, c Controller) fyne.CanvasObject {
 	)
 
 	return container.NewVBox(alertBox, form)
+}
+
+func renderNotification(ctx context.Context, c Controller) fyne.CanvasObject {
+	alertBox, setError := makeAlert()
+
+	notificationList := container.NewVBox()
+
+	newNotification := func(n Notification) fyne.CanvasObject {
+		var icon *widget.Icon
+
+		if n.IsOK {
+			icon = widget.NewIcon(theme.ConfirmIcon())
+		} else {
+			icon = widget.NewIcon(theme.WarningIcon())
+		}
+
+		title := widget.NewLabel(n.Title)
+		body := widget.NewTextGridFromString(n.Body)
+
+		return container.NewHBox(
+			icon,
+			container.NewVBox(
+				title, body,
+			),
+		)
+	}
+
+	loginCallback := func() {
+		alertBox.Hide()
+
+		data, err := c.Notifications(ctx)
+		if err != nil {
+			setError(err.Error())
+			alertBox.Show()
+
+			return
+		}
+
+		notificationList.RemoveAll()
+
+		for _, raw := range data {
+			notificationList.Add(newNotification(raw))
+		}
+	}
+
+	alertBox.Hide()
+
+	scrl := container.NewVScroll(notificationList)
+	scrl.SetMinSize(fyne.NewSize(600, 500))
+
+	return container.NewVBox(
+		widget.NewButton("Обновить", loginCallback),
+		alertBox,
+		scrl,
+	)
 }

@@ -30,3 +30,7 @@ func (c *ControllerMock) ButtonClick(ctx context.Context, duration, chance int64
 
 	return nil
 }
+
+func (c *ControllerMock) Notifications(ctx context.Context) ([]Notification, error) {
+	return []Notification{}, nil
+}

@@ -4,30 +4,41 @@ import (
 	"app/clients/kafka"
 	authClient "app/services/auth/client"
 	gatedto "app/services/gate/dto"
-	"app/services/gate/internal/gatepb"
+	"app/services/gate/internal/pb"
 	notificationClient "app/services/notification/client"
 	"context"
 	"time"
 
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type pbServer struct {
-	gatepb.GateServer
+	pb.GateServer
+	pb.NotificationServer
 
 	auth         *authClient.Client
 	notification *notificationClient.Client
 	kafka        *kafka.Client
 }
 
-func (s *pbServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb.LoginResponse, error) {
+func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.UserInfo, error) {
+	// FIXME: добавить сюда редис
+	info, err := s.auth.Info(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+
+func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	logRoute(ctx, "login")
 
 	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
-		return &gatepb.LoginResponse{
-			Error: &gatepb.ErrorInfo{
-				Has:  true,
+		return &pb.LoginResponse{
+			Error: &pb.ErrorInfo{
 				Code: "0",
 				Text: err.Error(),
 			},
@@ -48,19 +59,18 @@ func (s *pbServer) Login(ctx context.Context, req *gatepb.LoginRequest) (*gatepb
 	// Ошибка не имеет значения в данном случае
 	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
 
-	return &gatepb.LoginResponse{
+	return &pb.LoginResponse{
 		Token: token,
 	}, nil
 }
 
-func (s *pbServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*gatepb.RegisterResponse, error) {
+func (s *pbServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	logRoute(ctx, "register")
 
 	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
-		return &gatepb.RegisterResponse{
-			Error: &gatepb.ErrorInfo{
-				Has:  true,
+		return &pb.RegisterResponse{
+			Error: &pb.ErrorInfo{
 				Code: "0",
 				Text: err.Error(),
 			},
@@ -80,16 +90,15 @@ func (s *pbServer) Register(ctx context.Context, req *gatepb.RegisterRequest) (*
 	// Ошибка не имеет значения в данном случае
 	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
 
-	return new(gatepb.RegisterResponse), nil
+	return new(pb.RegisterResponse), nil
 }
 
-func (s *pbServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*gatepb.ButtonResponse, error) {
+func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.ButtonResponse, error) {
 	logRoute(ctx, "button")
 
 	if req.GetDuration() < 0 {
-		return &gatepb.ButtonResponse{
-			Error: &gatepb.ErrorInfo{
-				Has:  true,
+		return &pb.ButtonResponse{
+			Error: &pb.ErrorInfo{
 				Code: "0",
 				Text: "invalid duration",
 			},
@@ -98,11 +107,10 @@ func (s *pbServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*gate
 
 	req.GetChance()
 
-	info, err := s.auth.Info(ctx, req.GetToken())
+	info, err := s.authInfo(ctx, req.GetToken())
 	if err != nil {
-		return &gatepb.ButtonResponse{
-			Error: &gatepb.ErrorInfo{
-				Has:  true,
+		return &pb.ButtonResponse{
+			Error: &pb.ErrorInfo{
 				Code: "0",
 				Text: err.Error(),
 			},
@@ -125,14 +133,115 @@ func (s *pbServer) Button(ctx context.Context, req *gatepb.ButtonRequest) (*gate
 
 	err = s.kafka.Write(ctx, randomSHA256String(), kData)
 	if err != nil {
-		return &gatepb.ButtonResponse{
-			Error: &gatepb.ErrorInfo{
-				Has:  true,
+		return &pb.ButtonResponse{
+			Error: &pb.ErrorInfo{
 				Code: "0",
 				Text: err.Error(),
 			},
 		}, nil
 	}
 
-	return new(gatepb.ButtonResponse), nil
+	return new(pb.ButtonResponse), nil
+}
+
+func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*pb.NotificationListResponse, error) {
+	logRoute(ctx, "list")
+
+	info, err := s.authInfo(ctx, req.GetToken())
+	if err != nil {
+		return &pb.NotificationListResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	kData := gatedto.KafkaData{
+		Action:       gatedto.ActionList,
+		RequestTime:  time.Now().UTC(),
+		UserID:       info.ID,
+		SessionToken: req.GetToken(),
+	}
+
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		kData.Addr = p.Addr.String()
+	}
+
+	// Ошибка не имеет значения в данном случае
+	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
+
+	rawNotifications, err := s.notification.List(ctx, info.ID)
+	if err != nil {
+		return &pb.NotificationListResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	notifications := make([]*pb.NotificationData, len(rawNotifications))
+	for index, raw := range rawNotifications {
+		notifications[index] = &pb.NotificationData{
+			Kind:    raw.Kind,
+			Level:   raw.Level,
+			Title:   raw.Title,
+			Body:    raw.Body,
+			Id:      raw.ID,
+			Created: timestamppb.New(raw.Created),
+		}
+	}
+
+	return &pb.NotificationListResponse{
+		List: notifications,
+	}, nil
+}
+
+func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*pb.NotificationReadResponse, error) {
+	logRoute(ctx, "read")
+
+	info, err := s.authInfo(ctx, req.GetToken())
+	if err != nil {
+		return &pb.NotificationReadResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	kData := gatedto.KafkaData{
+		Action:       gatedto.ActionRead,
+		RequestTime:  time.Now().UTC(),
+		UserID:       info.ID,
+		SessionToken: req.GetToken(),
+	}
+
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		kData.Addr = p.Addr.String()
+	}
+
+	// Ошибка не имеет значения в данном случае
+	_ = s.kafka.Write(ctx, randomSHA256String(), kData)
+
+	if req.GetAll() {
+		err = s.notification.ReadAll(ctx, info.ID)
+	} else {
+		// FIXME: уязвимость пользователь может отметить не свое уведомление
+		err = s.notification.Read(ctx, req.GetId())
+	}
+
+	if err != nil {
+		return &pb.NotificationReadResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	return &pb.NotificationReadResponse{}, nil
 }

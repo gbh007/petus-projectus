@@ -6,6 +6,8 @@ const (
 	ActionLogin    = "login"
 	ActionRegister = "register"
 	ActionButton   = "button"
+	ActionList     = "list"
+	ActionRead     = "read"
 )
 
 type KafkaData struct {

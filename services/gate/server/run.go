@@ -3,7 +3,7 @@ package server
 import (
 	"app/clients/kafka"
 	authClient "app/services/auth/client"
-	"app/services/gate/internal/gatepb"
+	"app/services/gate/internal/pb"
 	notificationClient "app/services/notification/client"
 	"context"
 	"crypto/sha256"
@@ -24,7 +24,7 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 
 	defer authClient.Close()
 
-	notificationClient, err := notificationClient.New(comCnf.AuthAddress)
+	notificationClient, err := notificationClient.New(comCnf.NotificationAddress)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,8 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 	}
 
 	grpcServer := grpc.NewServer()
-	gatepb.RegisterGateServer(grpcServer, s)
+	pb.RegisterGateServer(grpcServer, s)
+	pb.RegisterNotificationServer(grpcServer, s)
 
 	go func() {
 		<-ctx.Done()
