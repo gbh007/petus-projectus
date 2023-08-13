@@ -63,13 +63,14 @@ services:
       args:
         BINARY_PATH: _build/worker
     restart: always
-    command: "-rabbitmq-user task -rabbitmq-pass task_pwd"
+    command: "-rabbitmq-user task -rabbitmq-pass task_pwd -db-user task_user -db-pass task_pwd -db-addr clickhouse:8123 -db-name task_db"
     deploy:
       mode: replicated
       replicas: 2
     depends_on:
       - rabbitmq
       - notification
+      - clickhouse
 
   notification:
     build:
