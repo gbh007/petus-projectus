@@ -1,25 +1,31 @@
 package main
 
 import (
+	"app/internal/config"
 	"app/services/log/server"
 	"context"
-	"flag"
 	"log"
 	"os/signal"
 	"syscall"
+
+	"github.com/vrischmann/envconfig"
 )
 
+type Config struct {
+	Kafka config.Kafka
+	DB    config.Database
+}
+
 func main() {
-	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Адрес сервера кафки")
-	kafkaTopic := flag.String("kafka-topic", "gate", "Топик сервера кафки")
-	kafkaGroup := flag.String("kafka-group", "log", "Группа топика сервера кафки")
+	cfg := new(Config)
 
-	dbUsername := flag.String("db-user", "root", "Пользователь БД")
-	dbPassword := flag.String("db-pass", "", "Пароль пользователя БД")
-	dbAddr := flag.String("db-addr", "localhost:8123", "Адрес БД")
-	dbName := flag.String("db-name", "", "Имя БД для соединения")
+	err := envconfig.Init(cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	flag.Parse()
+	// FIXME: удалить после тестов
+	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -32,18 +38,18 @@ func main() {
 
 	log.Println("server start")
 
-	err := server.Run(
+	err = server.Run(
 		ctx,
 		server.KafkaConfig{
-			Addr:    *kafkaAddr,
-			Topic:   *kafkaTopic,
-			GroupID: *kafkaGroup,
+			Addr:    cfg.Kafka.Addr,
+			Topic:   cfg.Kafka.Topic,
+			GroupID: cfg.Kafka.GroupID,
 		},
 		server.DBConfig{
-			Username:     *dbUsername,
-			Password:     *dbPassword,
-			Addr:         *dbAddr,
-			DatabaseName: *dbName,
+			Username:     cfg.DB.User,
+			Password:     cfg.DB.Pass,
+			Addr:         cfg.DB.Addr,
+			DatabaseName: cfg.DB.Name,
 		},
 	)
 	if err != nil {

@@ -15,6 +15,10 @@ func (c *Client) Connect(createTopic bool) error {
 	c.kafkaConn = conn
 
 	if createTopic {
+		if c.numPartitions < 1 {
+			return fmt.Errorf("%w: Connect: %w: invalid number of partitions %d", ErrKafkaClient, ErrFailToCreateTopic, c.numPartitions)
+		}
+
 		topicConfigs := []kafka.TopicConfig{
 			{
 				Topic:             c.topic,

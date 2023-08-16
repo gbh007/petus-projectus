@@ -1,25 +1,31 @@
 package main
 
 import (
+	"app/internal/config"
 	"app/services/handler/server"
 	"context"
-	"flag"
 	"log"
 	"os/signal"
 	"syscall"
+
+	"github.com/vrischmann/envconfig"
 )
 
+type Config struct {
+	RabbitMQ config.RabbitMQ
+	Kafka    config.Kafka
+}
+
 func main() {
-	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Адрес сервера кафки")
-	kafkaTopic := flag.String("kafka-topic", "gate", "Топик сервера кафки")
-	kafkaGroup := flag.String("kafka-group", "handler", "Группа топика сервера кафки")
+	cfg := new(Config)
 
-	rabbitMQUsername := flag.String("rabbitmq-user", "root", "Пользователь RabbitMQ")
-	rabbitMQPassword := flag.String("rabbitmq-pass", "", "Пароль пользователя RabbitMQ")
-	rabbitMQAddr := flag.String("rabbitmq-addr", "rabbitmq:5672", "Адрес RabbitMQ")
-	rabbitMQName := flag.String("rabbitmq-name", "task", "Имя очереди RabbitMQ для соединения")
+	err := envconfig.Init(cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	flag.Parse()
+	// FIXME: удалить после тестов
+	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -32,18 +38,18 @@ func main() {
 
 	log.Println("server start")
 
-	err := server.Run(
+	err = server.Run(
 		ctx,
 		server.KafkaConfig{
-			Addr:    *kafkaAddr,
-			Topic:   *kafkaTopic,
-			GroupID: *kafkaGroup,
+			Addr:    cfg.Kafka.Addr,
+			Topic:   cfg.Kafka.Topic,
+			GroupID: cfg.Kafka.GroupID,
 		},
 		server.RabbitMQConfig{
-			Username:  *rabbitMQUsername,
-			Password:  *rabbitMQPassword,
-			Addr:      *rabbitMQAddr,
-			QueueName: *rabbitMQName,
+			Username:  cfg.RabbitMQ.User,
+			Password:  cfg.RabbitMQ.Pass,
+			Addr:      cfg.RabbitMQ.Addr,
+			QueueName: cfg.RabbitMQ.Queue,
 		},
 	)
 	if err != nil {

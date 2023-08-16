@@ -1,0 +1,27 @@
+package config
+
+type Addr struct {
+	Host string `envconfig:"default=localhost"`
+	Port int64  `envconfig:"default=50051"`
+}
+
+type Database struct {
+	User string
+	Pass string
+	Addr string
+	Name string
+}
+
+type Kafka struct {
+	Addr          string `envconfig:"default=kafka:9092"`
+	Topic         string `envconfig:"default=gate"`
+	GroupID       string `envconfig:"optional"`
+	NumPartitions int    `envconfig:"optional"`
+}
+
+type RabbitMQ struct {
+	User  string
+	Pass  string
+	Addr  string `envconfig:"default=rabbitmq:5672"`
+	Queue string `envconfig:"default=task"`
+}

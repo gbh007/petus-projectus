@@ -1,28 +1,32 @@
 package main
 
 import (
+	"app/internal/config"
 	"app/services/worker/server"
 	"context"
-	"flag"
 	"log"
 	"os/signal"
 	"syscall"
+
+	"github.com/vrischmann/envconfig"
 )
 
+type Config struct {
+	RabbitMQ         config.RabbitMQ
+	DB               config.Database
+	NotificationAddr string `envconfig:"default=notification:50051"`
+}
+
 func main() {
-	rabbitMQUsername := flag.String("rabbitmq-user", "root", "Пользователь RabbitMQ")
-	rabbitMQPassword := flag.String("rabbitmq-pass", "", "Пароль пользователя RabbitMQ")
-	rabbitMQAddr := flag.String("rabbitmq-addr", "rabbitmq:5672", "Адрес RabbitMQ")
-	rabbitMQName := flag.String("rabbitmq-name", "task", "Имя очереди RabbitMQ для соединения")
+	cfg := new(Config)
 
-	dbUsername := flag.String("db-user", "root", "Пользователь БД")
-	dbPassword := flag.String("db-pass", "", "Пароль пользователя БД")
-	dbAddr := flag.String("db-addr", "localhost:8123", "Адрес БД")
-	dbName := flag.String("db-name", "", "Имя БД для соединения")
+	err := envconfig.Init(cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	notificationAddr := flag.String("notification", "notification:50051", "Адрес сервиса уведомлений")
-
-	flag.Parse()
+	// FIXME: удалить после тестов
+	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -35,21 +39,21 @@ func main() {
 
 	log.Println("server start")
 
-	err := server.Run(
+	err = server.Run(
 		ctx,
 		server.DBConfig{
-			Username:     *dbUsername,
-			Password:     *dbPassword,
-			Addr:         *dbAddr,
-			DatabaseName: *dbName,
+			Username:     cfg.DB.User,
+			Password:     cfg.DB.Pass,
+			Addr:         cfg.DB.Addr,
+			DatabaseName: cfg.DB.Name,
 		},
 		server.RabbitMQConfig{
-			Username:  *rabbitMQUsername,
-			Password:  *rabbitMQPassword,
-			Addr:      *rabbitMQAddr,
-			QueueName: *rabbitMQName,
+			Username:  cfg.RabbitMQ.User,
+			Password:  cfg.RabbitMQ.Pass,
+			Addr:      cfg.RabbitMQ.Addr,
+			QueueName: cfg.RabbitMQ.Queue,
 		},
-		*notificationAddr,
+		cfg.NotificationAddr,
 	)
 	if err != nil {
 		log.Println(err)

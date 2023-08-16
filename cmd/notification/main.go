@@ -1,25 +1,32 @@
 package main
 
 import (
+	"app/internal/config"
 	"app/services/notification/server"
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os/signal"
 	"syscall"
+
+	"github.com/vrischmann/envconfig"
 )
 
+type Config struct {
+	Self config.Addr
+	DB   config.Database
+}
+
 func main() {
-	host := flag.String("h", "localhost", "Хост сервера")
-	port := flag.Int64("p", 50051, "Порт сервера")
+	cfg := new(Config)
 
-	dbUsername := flag.String("db-user", "root", "Пользователь БД")
-	dbPassword := flag.String("db-pass", "", "Пароль пользователя БД")
-	dbAddr := flag.String("db-addr", "localhost:3306", "Адрес БД")
-	dbName := flag.String("db-name", "", "Имя БД для соединения")
+	err := envconfig.Init(cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	flag.Parse()
+	// FIXME: удалить после тестов
+	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -32,13 +39,13 @@ func main() {
 
 	log.Println("server start")
 
-	err := server.Run(ctx,
-		fmt.Sprintf("%s:%d", *host, *port),
+	err = server.Run(ctx,
+		fmt.Sprintf("%s:%d", cfg.Self.Host, cfg.Self.Port),
 		server.DBConfig{
-			Username:     *dbUsername,
-			Password:     *dbPassword,
-			Addr:         *dbAddr,
-			DatabaseName: *dbName,
+			Username:     cfg.DB.User,
+			Password:     cfg.DB.Pass,
+			Addr:         cfg.DB.Addr,
+			DatabaseName: cfg.DB.Name,
 		},
 	)
 	if err != nil {

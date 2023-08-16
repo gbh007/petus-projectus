@@ -18,8 +18,14 @@ build:
 	$(BUILD_ENV) go build -o _build/log ./cmd/log
 	$(BUILD_ENV) go build -o _build/notification ./cmd/notification
 
-compose: build
+up: build
 	docker compose up -d --build
+
+logs:
+	docker compose logs -f auth gate handler log notification worker
+
+down:
+	docker compose down --remove-orphans
 
 desktop:
 	go run cmd/desktop-client/main.go

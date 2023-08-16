@@ -1,27 +1,34 @@
 package main
 
 import (
+	"app/internal/config"
 	"app/services/gate/server"
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os/signal"
 	"syscall"
+
+	"github.com/vrischmann/envconfig"
 )
 
+type Config struct {
+	Self             config.Addr
+	Kafka            config.Kafka
+	AuthAddr         string `envconfig:"default=auth:50051"`
+	NotificationAddr string `envconfig:"default=notification:50051"`
+}
+
 func main() {
-	host := flag.String("h", "localhost", "Хост сервера")
-	port := flag.Int64("p", 14281, "Порт сервера")
+	cfg := new(Config)
 
-	authAddr := flag.String("addr-auth", "auth:50051", "Адрес сервиса учетных записей")
-	notificationAddr := flag.String("addr-notification", "notification:50051", "Адрес сервиса уведомлений")
+	err := envconfig.Init(cfg)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-	kafkaAddr := flag.String("kafka-addr", "kafka:9092", "Адрес сервера кафки")
-	kafkaTopic := flag.String("kafka-topic", "gate", "Топик сервера кафки")
-	kafkaNumP := flag.Int("kafka-num-p", 10, "Количество разделов топика сервера кафки, при положительном значении создаст топик в случае его отсутствия")
-
-	flag.Parse()
+	// FIXME: удалить после тестов
+	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -34,17 +41,17 @@ func main() {
 
 	log.Println("server start")
 
-	err := server.Run(
+	err = server.Run(
 		ctx,
 		server.CommunicationConfig{
-			SelfAddress:         fmt.Sprintf("%s:%d", *host, *port),
-			AuthAddress:         *authAddr,
-			NotificationAddress: *notificationAddr,
+			SelfAddress:         fmt.Sprintf("%s:%d", cfg.Self.Host, cfg.Self.Port),
+			AuthAddress:         cfg.AuthAddr,
+			NotificationAddress: cfg.NotificationAddr,
 		},
 		server.KafkaConfig{
-			Addr:          *kafkaAddr,
-			Topic:         *kafkaTopic,
-			NumPartitions: *kafkaNumP,
+			Addr:          cfg.Kafka.Addr,
+			Topic:         cfg.Kafka.Topic,
+			NumPartitions: cfg.Kafka.NumPartitions,
 		},
 	)
 	if err != nil {
