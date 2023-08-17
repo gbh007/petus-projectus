@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.12.4
-// source: gate.proto
+// source: services/gate/gate.proto
 
 package pb
 
@@ -179,7 +179,7 @@ var Gate_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "gate.proto",
+	Metadata: "services/gate/gate.proto",
 }
 
 const (
@@ -306,5 +306,5 @@ var Notification_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "gate.proto",
+	Metadata: "services/gate/gate.proto",
 }

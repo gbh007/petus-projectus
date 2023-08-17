@@ -1,7 +1,7 @@
 package server
 
 import (
-	"app/services/auth/internal/authpb"
+	"app/services/auth/internal/pb"
 	"app/services/auth/internal/storage"
 	"context"
 	"log"
@@ -31,7 +31,7 @@ func Run(ctx context.Context, addr string, cfg DBConfig) error {
 	}
 
 	grpcServer := grpc.NewServer()
-	authpb.RegisterAuthServer(grpcServer, s)
+	pb.RegisterAuthServer(grpcServer, s)
 
 	go func() {
 		<-ctx.Done()

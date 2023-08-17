@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth;
 
-option go_package = "services/auth/internal/authpb";
+option go_package = "services/auth/internal/pb";
 
 service Auth {
   rpc Login(LoginRequest) returns (LoginResponse) {}
@@ -12,7 +12,6 @@ service Auth {
 }
 
 message ErrorInfo {
-  bool has = 1;
   string code = 2;
   string text = 3;
 }

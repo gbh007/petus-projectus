@@ -1,9 +1,9 @@
 BUILD_ENV = GOOS=linux GOARCH=amd64 CGO_ENABLED=0
 
 proto:
-	protoc -I=. --go_out=. --go-grpc_out=. gate.proto
-	protoc -I=. --go_out=. --go-grpc_out=. auth.proto
-	protoc -I=. --go_out=. --go-grpc_out=. notification.proto
+	protoc -I=. --go_out=. --go-grpc_out=. services/gate/gate.proto
+	protoc -I=. --go_out=. --go-grpc_out=. services/auth/auth.proto
+	protoc -I=. --go_out=. --go-grpc_out=. services/notification/notification.proto
 
 install-proto:
 	sudo apt install protobuf-compiler

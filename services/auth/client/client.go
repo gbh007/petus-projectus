@@ -1,7 +1,7 @@
 package client
 
 import (
-	"app/services/auth/internal/authpb"
+	"app/services/auth/internal/pb"
 	"context"
 	"errors"
 
@@ -9,7 +9,7 @@ import (
 )
 
 type Client struct {
-	client authpb.AuthClient
+	client pb.AuthClient
 	conn   *grpc.ClientConn
 }
 
@@ -26,7 +26,7 @@ func New(addr string) (*Client, error) {
 	}
 
 	c.conn = conn
-	c.client = authpb.NewAuthClient(conn)
+	c.client = pb.NewAuthClient(conn)
 
 	return c, nil
 }
@@ -40,7 +40,7 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) Login(ctx context.Context, login, pass string) (string, error) {
-	res, err := c.client.Login(ctx, &authpb.LoginRequest{
+	res, err := c.client.Login(ctx, &pb.LoginRequest{
 		Login:    login,
 		Password: pass,
 	})
@@ -49,7 +49,7 @@ func (c *Client) Login(ctx context.Context, login, pass string) (string, error) 
 		return "", err
 	}
 
-	if res.GetError().GetHas() {
+	if res.GetError() != nil {
 		err := errors.New(res.GetError().GetText())
 
 		return "", err
@@ -59,7 +59,7 @@ func (c *Client) Login(ctx context.Context, login, pass string) (string, error) 
 }
 
 func (c *Client) Register(ctx context.Context, login, pass string) error {
-	res, err := c.client.Register(ctx, &authpb.RegisterRequest{
+	res, err := c.client.Register(ctx, &pb.RegisterRequest{
 		Login:    login,
 		Password: pass,
 	})
@@ -68,8 +68,7 @@ func (c *Client) Register(ctx context.Context, login, pass string) error {
 		return err
 	}
 
-	if res.GetError().GetHas() {
-		// code := res.GetError().GetCode()
+	if res.GetError() != nil {
 		err := errors.New(res.GetError().GetText())
 
 		return err
@@ -79,7 +78,7 @@ func (c *Client) Register(ctx context.Context, login, pass string) error {
 }
 
 func (c *Client) Info(ctx context.Context, token string) (*UserInfo, error) {
-	res, err := c.client.Info(ctx, &authpb.InfoRequest{
+	res, err := c.client.Info(ctx, &pb.InfoRequest{
 		Token: token,
 	})
 
@@ -87,7 +86,7 @@ func (c *Client) Info(ctx context.Context, token string) (*UserInfo, error) {
 		return nil, err
 	}
 
-	if res.GetError().GetHas() {
+	if res.GetError() != nil {
 		err := errors.New(res.GetError().GetText())
 
 		return nil, err
