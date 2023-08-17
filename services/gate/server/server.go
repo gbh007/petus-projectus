@@ -5,6 +5,7 @@ import (
 	authClient "app/services/auth/client"
 	gatedto "app/services/gate/dto"
 	"app/services/gate/internal/pb"
+	logClient "app/services/log/client"
 	notificationClient "app/services/notification/client"
 	"context"
 	"fmt"
@@ -14,11 +15,13 @@ import (
 )
 
 type pbServer struct {
-	pb.GateServer
-	pb.NotificationServer
+	pb.UnimplementedGateServer
+	pb.UnimplementedNotificationServer
+	pb.UnimplementedLogServer
 
 	auth         *authClient.Client
 	notification *notificationClient.Client
+	log          *logClient.Client
 	kafka        *kafka.Client
 }
 
@@ -233,4 +236,44 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 	}
 
 	return new(pb.NotificationReadResponse), nil
+}
+
+func (s *pbServer) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
+	requestID, kData := logRoute(ctx, gatedto.ActionActivity)
+	defer func() {
+		// Ошибка не имеет значения в данном случае
+		_ = s.kafka.Write(ctx, requestID, kData)
+	}()
+
+	info, err := s.authInfo(ctx, req.GetToken())
+	if err != nil {
+		kData.ErrorText = err.Error()
+
+		return &pb.ActivityResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	kData.UserID = info.ID
+	kData.SessionToken = req.GetToken()
+
+	data, err := s.log.Activity(ctx, info.ID)
+	if err != nil {
+		kData.ErrorText = err.Error()
+
+		return &pb.ActivityResponse{
+			Error: &pb.ErrorInfo{
+				Code: "0",
+				Text: err.Error(),
+			},
+		}, nil
+	}
+
+	return &pb.ActivityResponse{
+		RequestCount: data.RequestCount,
+		LastRequest:  timestamppb.New(data.LastRequest),
+	}, nil
 }

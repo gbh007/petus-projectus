@@ -4,6 +4,7 @@ proto:
 	protoc -I=. --go_out=. --go-grpc_out=. services/gate/gate.proto
 	protoc -I=. --go_out=. --go-grpc_out=. services/auth/auth.proto
 	protoc -I=. --go_out=. --go-grpc_out=. services/notification/notification.proto
+	protoc -I=. --go_out=. --go-grpc_out=. services/log/log.proto
 
 install-proto:
 	sudo apt install protobuf-compiler

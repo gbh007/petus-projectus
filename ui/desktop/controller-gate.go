@@ -4,15 +4,18 @@ import (
 	gateClient "app/services/gate/client"
 	"context"
 	"errors"
+	"time"
 )
 
-type controller_gRPC struct {
+var _ Controller = new(controllerGate)
+
+type controllerGate struct {
 	client *gateClient.Client
 	token  string
 }
 
-func newController_gRPC(addr string) (*controller_gRPC, error) {
-	c := new(controller_gRPC)
+func newControllerGate(addr string) (*controllerGate, error) {
+	c := new(controllerGate)
 
 	gc, err := gateClient.New(addr)
 	if err != nil {
@@ -24,7 +27,7 @@ func newController_gRPC(addr string) (*controller_gRPC, error) {
 	return c, nil
 }
 
-func (c *controller_gRPC) Close() error {
+func (c *controllerGate) Close() error {
 	if c.client == nil {
 		return errors.New("no client")
 	}
@@ -32,7 +35,7 @@ func (c *controller_gRPC) Close() error {
 	return c.client.Close()
 }
 
-func (c *controller_gRPC) Login(ctx context.Context, login, pass string) error {
+func (c *controllerGate) Login(ctx context.Context, login, pass string) error {
 	token, err := c.client.Login(ctx, login, pass)
 	if err != nil {
 		return err
@@ -43,7 +46,7 @@ func (c *controller_gRPC) Login(ctx context.Context, login, pass string) error {
 	return nil
 }
 
-func (c *controller_gRPC) Register(ctx context.Context, login, pass string) error {
+func (c *controllerGate) Register(ctx context.Context, login, pass string) error {
 	err := c.client.Register(ctx, login, pass)
 	if err != nil {
 		return err
@@ -52,7 +55,7 @@ func (c *controller_gRPC) Register(ctx context.Context, login, pass string) erro
 	return nil
 }
 
-func (c *controller_gRPC) ButtonClick(ctx context.Context, duration, chance int64) error {
+func (c *controllerGate) ButtonClick(ctx context.Context, duration, chance int64) error {
 	err := c.client.ButtonClick(ctx, c.token, duration, chance)
 	if err != nil {
 		return err
@@ -61,7 +64,7 @@ func (c *controller_gRPC) ButtonClick(ctx context.Context, duration, chance int6
 	return nil
 }
 
-func (c *controller_gRPC) Notifications(ctx context.Context) ([]Notification, error) {
+func (c *controllerGate) Notifications(ctx context.Context) ([]Notification, error) {
 	data, err := c.client.List(ctx, c.token)
 	if err != nil {
 		return nil, err
@@ -79,4 +82,8 @@ func (c *controller_gRPC) Notifications(ctx context.Context) ([]Notification, er
 	}
 
 	return out, nil
+}
+
+func (c *controllerGate) Activity(ctx context.Context) (int64, time.Time, error) {
+	return c.client.Activity(ctx, c.token)
 }

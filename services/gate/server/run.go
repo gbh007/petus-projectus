@@ -5,6 +5,7 @@ import (
 	authClient "app/services/auth/client"
 	"app/services/gate/dto"
 	"app/services/gate/internal/pb"
+	logClient "app/services/log/client"
 	notificationClient "app/services/notification/client"
 	"context"
 	"crypto/sha256"
@@ -33,6 +34,13 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 
 	defer notificationClient.Close()
 
+	logClient, err := logClient.New(comCnf.LogAddress)
+	if err != nil {
+		return err
+	}
+
+	defer logClient.Close()
+
 	kafkaClient := kafka.New(kafkaCnf.Addr, kafkaCnf.Topic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
 	err = kafkaClient.Connect(kafkaCnf.NumPartitions > 0)
 	if err != nil {
@@ -50,11 +58,13 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 		auth:         authClient,
 		kafka:        kafkaClient,
 		notification: notificationClient,
+		log:          logClient,
 	}
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterGateServer(grpcServer, s)
 	pb.RegisterNotificationServer(grpcServer, s)
+	pb.RegisterLogServer(grpcServer, s)
 
 	go func() {
 		<-ctx.Done()

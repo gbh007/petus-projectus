@@ -12,6 +12,7 @@ import (
 )
 
 type Config struct {
+	Self  config.Addr
 	Kafka config.Kafka
 	DB    config.Database
 }
@@ -23,9 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	// FIXME: удалить после тестов
-	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -40,6 +38,7 @@ func main() {
 
 	err = server.Run(
 		ctx,
+		cfg.Self.Full(),
 		server.KafkaConfig{
 			Addr:    cfg.Kafka.Addr,
 			Topic:   cfg.Kafka.Topic,

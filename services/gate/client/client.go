@@ -4,6 +4,7 @@ import (
 	"app/services/gate/internal/pb"
 	"context"
 	"errors"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -11,6 +12,7 @@ import (
 type Client struct {
 	gateClient         pb.GateClient
 	notificationClient pb.NotificationClient
+	logClient          pb.LogClient
 	conn               *grpc.ClientConn
 }
 
@@ -29,6 +31,7 @@ func New(addr string) (*Client, error) {
 	c.conn = conn
 	c.gateClient = pb.NewGateClient(conn)
 	c.notificationClient = pb.NewNotificationClient(conn)
+	c.logClient = pb.NewLogClient(conn)
 
 	return c, nil
 }
@@ -145,4 +148,21 @@ func (c *Client) List(ctx context.Context, token string) ([]*Notification, error
 	}
 
 	return notifications, nil
+}
+
+func (c *Client) Activity(ctx context.Context, token string) (int64, time.Time, error) {
+	res, err := c.logClient.Activity(ctx, &pb.ActivityRequest{
+		Token: token,
+	})
+	if err != nil {
+		return 0, time.Time{}, err
+	}
+
+	if res.GetError() != nil {
+		err := errors.New(res.GetError().GetText())
+
+		return 0, time.Time{}, err
+	}
+
+	return res.GetRequestCount(), res.GetLastRequest().AsTime(), nil
 }

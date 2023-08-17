@@ -8,7 +8,7 @@ import (
 )
 
 type authServer struct {
-	pb.AuthServer
+	pb.UnimplementedAuthServer
 
 	db *storage.Database
 }

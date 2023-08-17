@@ -4,7 +4,6 @@ import (
 	"app/internal/config"
 	"app/services/gate/server"
 	"context"
-	"fmt"
 	"log"
 	"os/signal"
 	"syscall"
@@ -17,6 +16,7 @@ type Config struct {
 	Kafka            config.Kafka
 	AuthAddr         string `envconfig:"default=auth:50051"`
 	NotificationAddr string `envconfig:"default=notification:50051"`
+	LogAddr          string `envconfig:"default=log:50051"`
 }
 
 func main() {
@@ -26,9 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	// FIXME: удалить после тестов
-	log.Printf("config %#+v\n", cfg)
 
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
@@ -44,8 +41,9 @@ func main() {
 	err = server.Run(
 		ctx,
 		server.CommunicationConfig{
-			SelfAddress:         fmt.Sprintf("%s:%d", cfg.Self.Host, cfg.Self.Port),
+			SelfAddress:         cfg.Self.Full(),
 			AuthAddress:         cfg.AuthAddr,
+			LogAddress:          cfg.LogAddr,
 			NotificationAddress: cfg.NotificationAddr,
 		},
 		server.KafkaConfig{

@@ -10,5 +10,6 @@ type KafkaConfig struct {
 type CommunicationConfig struct {
 	SelfAddress         string
 	AuthAddress         string
+	LogAddress          string
 	NotificationAddress string
 }

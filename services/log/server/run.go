@@ -2,75 +2,75 @@ package server
 
 import (
 	"app/clients/kafka"
-	gatedto "app/services/gate/dto"
+	"app/services/log/internal/pb"
 	"app/services/log/internal/storage"
 	"context"
-	"database/sql"
 	"log"
+	"net"
+	"sync"
+
+	"google.golang.org/grpc"
 )
 
-func Run(ctx context.Context, kCnf KafkaConfig, dbCnf DBConfig) error {
+func Run(ctx context.Context, addr string, kCnf KafkaConfig, dbCnf DBConfig) error {
+	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
+	if err != nil {
+		return err
+	}
+
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+
 	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
 
-	err := kafkaClient.Connect(kCnf.NumPartitions > 0)
+	err = kafkaClient.Connect(kCnf.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
 	defer kafkaClient.Close()
 
-	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
-	if err != nil {
-		return err
+	handler := &handler{
+		kafka: kafkaClient,
+		db:    db,
 	}
 
-label1:
-	for {
-		data := new(gatedto.KafkaData)
-		key, err := kafkaClient.Read(ctx, data)
+	server := &pbServer{
+		db: db,
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterLogServer(grpcServer, server)
+
+	go func() {
+		<-ctx.Done()
+		grpcServer.GracefulStop()
+	}()
+
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		err := handler.Run(ctx)
 		if err != nil {
-			log.Println(err.Error())
-
-			select {
-			case <-ctx.Done():
-				break label1
-			default:
-				continue
-			}
+			log.Println(err)
 		}
+	}()
 
-		handle(ctx, key, data, db)
-	}
+	go func() {
+		defer wg.Done()
+
+		err := grpcServer.Serve(lis)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	wg.Wait()
 
 	return nil
-}
-
-func handle(ctx context.Context, key string, data *gatedto.KafkaData, db *storage.Database) {
-	log.Printf("accept %s %#+v\n", key, data)
-
-	err := db.InsertUserLog(ctx, &storage.UserLog{
-		RequestID: key,
-		Addr:      data.Addr,
-		UserID: sql.NullInt64{
-			Int64: data.UserID,
-			Valid: data.UserID != 0,
-		},
-		SessionToken: sql.NullString{
-			String: data.SessionToken,
-			Valid:  data.SessionToken != "",
-		},
-		Action: data.Action,
-		Chance: sql.NullInt64{
-			Int64: data.Chance,
-			Valid: data.Chance != 0,
-		},
-		Duration: sql.NullInt64{
-			Int64: data.Duration,
-			Valid: data.Duration != 0,
-		},
-		RequestTime: data.RequestTime,
-	})
-	if err != nil {
-		log.Println(key, err)
-	}
 }

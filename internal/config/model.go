@@ -1,8 +1,14 @@
 package config
 
+import "strconv"
+
 type Addr struct {
 	Host string `envconfig:"default=localhost"`
 	Port int64  `envconfig:"default=50051"`
+}
+
+func (a Addr) Full() string {
+	return a.Host + ":" + strconv.FormatInt(a.Port, 10)
 }
 
 type Database struct {

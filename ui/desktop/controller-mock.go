@@ -3,11 +3,14 @@ package desktop
 import (
 	"context"
 	"errors"
+	"time"
 )
 
-type ControllerMock struct{}
+var _ Controller = new(controllerMock)
 
-func (c *ControllerMock) Login(ctx context.Context, login, pass string) error {
+type controllerMock struct{}
+
+func (c *controllerMock) Login(ctx context.Context, login, pass string) error {
 	if login == "err" {
 		return errors.New(pass)
 	}
@@ -15,7 +18,7 @@ func (c *ControllerMock) Login(ctx context.Context, login, pass string) error {
 	return nil
 }
 
-func (c *ControllerMock) Register(ctx context.Context, login, pass string) error {
+func (c *controllerMock) Register(ctx context.Context, login, pass string) error {
 	if login == "err" {
 		return errors.New(pass)
 	}
@@ -23,7 +26,7 @@ func (c *ControllerMock) Register(ctx context.Context, login, pass string) error
 	return nil
 }
 
-func (c *ControllerMock) ButtonClick(ctx context.Context, duration, chance int64) error {
+func (c *controllerMock) ButtonClick(ctx context.Context, duration, chance int64) error {
 	if duration < 0 {
 		return errors.New("duration less 0")
 	}
@@ -31,6 +34,10 @@ func (c *ControllerMock) ButtonClick(ctx context.Context, duration, chance int64
 	return nil
 }
 
-func (c *ControllerMock) Notifications(ctx context.Context) ([]Notification, error) {
+func (c *controllerMock) Notifications(ctx context.Context) ([]Notification, error) {
 	return []Notification{}, nil
+}
+
+func (c *controllerMock) Activity(ctx context.Context) (int64, time.Time, error) {
+	return 0, time.Time{}, nil
 }

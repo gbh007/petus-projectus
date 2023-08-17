@@ -2,8 +2,11 @@ package desktop
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"sort"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -16,8 +19,7 @@ import (
 func Run(ctx context.Context, addr string) error {
 	myApp := app.New()
 
-	// controller := new(ControllerMock)
-	controller, err := newController_gRPC(addr)
+	controller, err := newControllerGate(addr)
 	if err != nil {
 		return err
 	}
@@ -230,7 +232,21 @@ func renderNotification(ctx context.Context, c Controller) fyne.CanvasObject {
 			return
 		}
 
+		count, last, err := c.Activity(ctx)
+		if err != nil {
+			setError(err.Error())
+			alertBox.Show()
+
+			return
+		}
+
 		notificationList.RemoveAll()
+
+		notificationList.Add(widget.NewLabel(fmt.Sprintf("%d > %s", count, last.Format(time.RFC1123))))
+
+		sort.Slice(data, func(i, j int) bool {
+			return data[i].Created.After(data[j].Created)
+		})
 
 		for _, raw := range data {
 			notificationList.Add(newNotification(raw))

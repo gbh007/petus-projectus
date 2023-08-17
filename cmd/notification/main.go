@@ -4,7 +4,6 @@ import (
 	"app/internal/config"
 	"app/services/notification/server"
 	"context"
-	"fmt"
 	"log"
 	"os/signal"
 	"syscall"
@@ -25,9 +24,6 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// FIXME: удалить после тестов
-	log.Printf("config %#+v\n", cfg)
-
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGHUP,
@@ -40,7 +36,7 @@ func main() {
 	log.Println("server start")
 
 	err = server.Run(ctx,
-		fmt.Sprintf("%s:%d", cfg.Self.Host, cfg.Self.Port),
+		cfg.Self.Full(),
 		server.DBConfig{
 			Username:     cfg.DB.User,
 			Password:     cfg.DB.Pass,

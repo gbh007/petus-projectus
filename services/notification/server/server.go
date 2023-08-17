@@ -10,7 +10,7 @@ import (
 )
 
 type pbServer struct {
-	pb.NotificationServer
+	pb.UnimplementedNotificationServer
 
 	db *storage.Database
 }

@@ -24,9 +24,6 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// FIXME: удалить после тестов
-	log.Printf("config %#+v\n", cfg)
-
 	ctx, cancelNotify := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGHUP,

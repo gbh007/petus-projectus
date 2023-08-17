@@ -8,6 +8,7 @@ const (
 	ActionButton   = "button"
 	ActionList     = "list"
 	ActionRead     = "read"
+	ActionActivity = "activity"
 )
 
 type KafkaData struct {
