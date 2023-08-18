@@ -17,6 +17,7 @@ type Config struct {
 	AuthAddr         string `envconfig:"default=auth:50051"`
 	NotificationAddr string `envconfig:"default=notification:50051"`
 	LogAddr          string `envconfig:"default=log:50051"`
+	RedisAddr        string `envconfig:"default=redis:6379"`
 }
 
 func main() {
@@ -45,6 +46,7 @@ func main() {
 			AuthAddress:         cfg.AuthAddr,
 			LogAddress:          cfg.LogAddr,
 			NotificationAddress: cfg.NotificationAddr,
+			RedisAddress:        cfg.RedisAddr,
 		},
 		server.KafkaConfig{
 			Addr:          cfg.Kafka.Addr,

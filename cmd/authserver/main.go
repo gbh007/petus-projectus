@@ -12,8 +12,9 @@ import (
 )
 
 type Config struct {
-	Self config.Addr
-	DB   config.Database
+	Self      config.Addr
+	DB        config.Database
+	RedisAddr string `envconfig:"default=redis:6379"`
 }
 
 func main() {
@@ -43,6 +44,7 @@ func main() {
 			Addr:         cfg.DB.Addr,
 			DatabaseName: cfg.DB.Name,
 		},
+		cfg.RedisAddr,
 	)
 	if err != nil {
 		log.Println(err)

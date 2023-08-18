@@ -2,7 +2,9 @@ package server
 
 import (
 	"app/clients/kafka"
+	"app/clients/redis"
 	authClient "app/services/auth/client"
+	"app/services/gate/dto"
 	gatedto "app/services/gate/dto"
 	"app/services/gate/internal/pb"
 	logClient "app/services/log/client"
@@ -10,9 +12,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const cacheTTL = time.Hour
 
 type pbServer struct {
 	pb.UnimplementedGateServer
@@ -23,13 +28,41 @@ type pbServer struct {
 	notification *notificationClient.Client
 	log          *logClient.Client
 	kafka        *kafka.Client
+	redis        *redis.Client[dto.UserInfo]
 }
 
 func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.UserInfo, error) {
-	// FIXME: добавить сюда редис
+	redisStart := time.Now()
+
+	redisData, err := s.redis.Get(token)
+
+	redisFinish := time.Now()
+	logStopwatch("redis", redisFinish.Sub(redisStart))
+
+	if err != nil {
+		// Ошибка отсутствия значения также логируется для отладки
+		log.Printf("%s error from redis: %s\n", token, err.Error())
+	} else {
+		return &authClient.UserInfo{
+			ID: redisData.ID,
+		}, nil
+	}
+
+	authStart := time.Now()
+
 	info, err := s.auth.Info(ctx, token)
+
+	authFinish := time.Now()
+	logStopwatch("auth service", authFinish.Sub(authStart))
+
 	if err != nil {
 		return nil, err
+	}
+
+	// В данном случае кешер сеттится специально здесь, а не в сервисе авторизации
+	err = s.redis.Set(token, dto.UserInfo{ID: info.ID}, cacheTTL)
+	if err != nil {
+		log.Println(err)
 	}
 
 	return info, nil

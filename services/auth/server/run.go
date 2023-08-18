@@ -1,8 +1,10 @@
 package server
 
 import (
+	"app/clients/redis"
 	"app/services/auth/internal/pb"
 	"app/services/auth/internal/storage"
+	"app/services/gate/dto"
 	"context"
 	"log"
 	"net"
@@ -15,7 +17,15 @@ type DBConfig struct {
 	Username, Password, Addr, DatabaseName string
 }
 
-func Run(ctx context.Context, addr string, cfg DBConfig) error {
+func Run(ctx context.Context, addr string, cfg DBConfig, redisAddr string) error {
+	redisClient := redis.New[dto.UserInfo](redisAddr)
+	err := redisClient.Connect(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer redisClient.Close()
+
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -27,7 +37,8 @@ func Run(ctx context.Context, addr string, cfg DBConfig) error {
 	}
 
 	s := &authServer{
-		db: db,
+		db:    db,
+		redis: redisClient,
 	}
 
 	grpcServer := grpc.NewServer()

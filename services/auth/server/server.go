@@ -1,16 +1,20 @@
 package server
 
 import (
+	"app/clients/redis"
 	"app/services/auth/internal/pb"
 	"app/services/auth/internal/storage"
+	"app/services/gate/dto"
 	"context"
+	"log"
 	"strings"
 )
 
 type authServer struct {
 	pb.UnimplementedAuthServer
 
-	db *storage.Database
+	db    *storage.Database
+	redis *redis.Client[dto.UserInfo]
 }
 
 func (s *authServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
@@ -28,6 +32,8 @@ func (s *authServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Login
 			},
 		}, nil
 	}
+
+	// Кеш в редисе мог сеттится в этом месте
 
 	return &pb.LoginResponse{
 		Token: token,
@@ -64,6 +70,12 @@ func (s *authServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Log
 				Text: err.Error(),
 			},
 		}, nil
+	}
+
+	// Инвалидация кеша
+	err = s.redis.Del(req.GetToken())
+	if err != nil {
+		log.Println(err)
 	}
 
 	return new(pb.LogoutResponse), nil

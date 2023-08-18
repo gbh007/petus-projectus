@@ -2,21 +2,16 @@ package server
 
 import (
 	"app/clients/kafka"
+	"app/clients/redis"
 	authClient "app/services/auth/client"
 	"app/services/gate/dto"
 	"app/services/gate/internal/pb"
 	logClient "app/services/log/client"
 	notificationClient "app/services/notification/client"
 	"context"
-	"crypto/sha256"
-	"fmt"
-	"log"
 	"net"
-	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
 )
 
 func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) error {
@@ -26,6 +21,14 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 	}
 
 	defer authClient.Close()
+
+	redisClient := redis.New[dto.UserInfo](comCnf.RedisAddress)
+	err = redisClient.Connect(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer redisClient.Close()
 
 	notificationClient, err := notificationClient.New(comCnf.NotificationAddress)
 	if err != nil {
@@ -59,6 +62,7 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 		kafka:        kafkaClient,
 		notification: notificationClient,
 		log:          logClient,
+		redis:        redisClient,
 	}
 
 	grpcServer := grpc.NewServer()
@@ -77,36 +81,4 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 	}
 
 	return nil
-}
-
-func logRoute(ctx context.Context, action string) (string, dto.KafkaData) {
-	requestID := randomSHA256String()
-
-	kd := dto.KafkaData{
-		Action:      action,
-		Addr:        "unknown",
-		RequestTime: time.Now().UTC(),
-	}
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		kd.Addr = p.Addr.String()
-	}
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		if realIPs := md.Get("X-Real-IP"); len(realIPs) > 0 {
-			kd.RealIP = realIPs[0]
-		}
-
-		kd.ForwardedFor = md.Get("X-Forwarded-For")
-	}
-
-	log.Printf("%s handle %s %s\n", requestID, action, kd.Addr)
-
-	return requestID, kd
-}
-
-func randomSHA256String() string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(time.Now().String())))
 }

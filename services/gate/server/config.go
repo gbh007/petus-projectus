@@ -12,4 +12,5 @@ type CommunicationConfig struct {
 	AuthAddress         string
 	LogAddress          string
 	NotificationAddress string
+	RedisAddress        string
 }

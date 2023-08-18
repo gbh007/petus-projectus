@@ -19,6 +19,7 @@ services:
       - kafka
       - notification
       - log
+      - redis
 
   auth:
     build:
@@ -35,6 +36,7 @@ services:
       DB_NAME: auth_db
     depends_on:
       - mariadb
+      - redis
 
   handler:
     build:
@@ -181,6 +183,12 @@ services:
     volumes:
       - "rabbitmq-data:/var/lib/rabbitmq"
 
+  redis:
+    image: redis:7.2
+    restart: always
+    volumes:
+      - "redis-data:/data"
+
 volumes:
   mariadb:
   kafka-secrets:
@@ -191,3 +199,4 @@ volumes:
   clickhouse-data:
   clickhouse-log:
   rabbitmq-data:
+  redis-data:
