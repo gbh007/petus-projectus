@@ -3,6 +3,7 @@ package server
 import (
 	"app/clients/kafka"
 	"app/clients/redis"
+	"app/internal/metrics"
 	authClient "app/services/auth/client"
 	"app/services/gate/dto"
 	gatedto "app/services/gate/dto"
@@ -27,7 +28,8 @@ type pbServer struct {
 	auth         *authClient.Client
 	notification *notificationClient.Client
 	log          *logClient.Client
-	kafka        *kafka.Client
+	kafkaTask    *kafka.Client
+	kafkaLog     *kafka.Client
 	redis        *redis.Client[dto.UserInfo]
 }
 
@@ -37,7 +39,7 @@ func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.User
 	redisData, err := s.redis.Get(token)
 
 	redisFinish := time.Now()
-	logStopwatch("redis", redisFinish.Sub(redisStart))
+	registerCacheHandle("redis", redisFinish.Sub(redisStart))
 
 	if err != nil {
 		// Ошибка отсутствия значения также логируется для отладки
@@ -53,7 +55,7 @@ func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.User
 	info, err := s.auth.Info(ctx, token)
 
 	authFinish := time.Now()
-	logStopwatch("auth service", authFinish.Sub(authStart))
+	registerCacheHandle("auth", authFinish.Sub(authStart))
 
 	if err != nil {
 		return nil, err
@@ -69,10 +71,13 @@ func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.User
 }
 
 func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	requestStart := time.Now()
 	requestID, kData := logRoute(ctx, gatedto.ActionLogin)
 	defer func() {
+		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
+
 		// Ошибка не имеет значения в данном случае
-		_ = s.kafka.Write(ctx, requestID, kData)
+		_ = s.kafkaLog.Write(ctx, requestID, kData)
 	}()
 
 	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
@@ -95,10 +100,13 @@ func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRe
 }
 
 func (s *pbServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	requestStart := time.Now()
 	requestID, kData := logRoute(ctx, gatedto.ActionRegister)
 	defer func() {
+		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
+
 		// Ошибка не имеет значения в данном случае
-		_ = s.kafka.Write(ctx, requestID, kData)
+		_ = s.kafkaLog.Write(ctx, requestID, kData)
 	}()
 
 	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
@@ -117,19 +125,14 @@ func (s *pbServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.R
 }
 
 func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.ButtonResponse, error) {
+	requestStart := time.Now()
 	requestID, kData := logRoute(ctx, gatedto.ActionButton)
 
-	sendToKafka := false
-
 	defer func() {
-		if sendToKafka {
-			log.Println(requestID, "already send")
-
-			return
-		}
+		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
 
 		// Ошибка не имеет значения в данном случае
-		_ = s.kafka.Write(ctx, requestID, kData)
+		_ = s.kafkaLog.Write(ctx, requestID, kData)
 	}()
 
 	if req.GetDuration() <= 0 {
@@ -161,11 +164,11 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 	kData.Chance = req.GetChance()
 	kData.Duration = req.GetDuration()
 
-	// Данные уже будут записаны ниже
-	sendToKafka = true
-
-	err = s.kafka.Write(ctx, requestID, kData)
+	err = s.kafkaTask.Write(ctx, requestID, kData)
 	if err != nil {
+		// Небольшой костыль для логирования метрик
+		kData.ErrorText = err.Error()
+
 		return &pb.ButtonResponse{
 			Error: &pb.ErrorInfo{
 				Code: "0",
@@ -178,10 +181,13 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 }
 
 func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*pb.NotificationListResponse, error) {
+	requestStart := time.Now()
 	requestID, kData := logRoute(ctx, gatedto.ActionList)
 	defer func() {
+		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
+
 		// Ошибка не имеет значения в данном случае
-		_ = s.kafka.Write(ctx, requestID, kData)
+		_ = s.kafkaLog.Write(ctx, requestID, kData)
 	}()
 
 	info, err := s.authInfo(ctx, req.GetToken())
@@ -229,10 +235,13 @@ func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*
 }
 
 func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*pb.NotificationReadResponse, error) {
+	requestStart := time.Now()
 	requestID, kData := logRoute(ctx, gatedto.ActionRead)
 	defer func() {
+		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
+
 		// Ошибка не имеет значения в данном случае
-		_ = s.kafka.Write(ctx, requestID, kData)
+		_ = s.kafkaLog.Write(ctx, requestID, kData)
 	}()
 
 	info, err := s.authInfo(ctx, req.GetToken())
@@ -272,10 +281,13 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 }
 
 func (s *pbServer) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
+	requestStart := time.Now()
 	requestID, kData := logRoute(ctx, gatedto.ActionActivity)
 	defer func() {
+		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
+
 		// Ошибка не имеет значения в данном случае
-		_ = s.kafka.Write(ctx, requestID, kData)
+		_ = s.kafkaLog.Write(ctx, requestID, kData)
 	}()
 
 	info, err := s.authInfo(ctx, req.GetToken())

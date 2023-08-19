@@ -3,6 +3,7 @@ package server
 import (
 	"app/clients/kafka"
 	"app/clients/redis"
+	"app/internal/metrics"
 	authClient "app/services/auth/client"
 	"app/services/gate/dto"
 	"app/services/gate/internal/pb"
@@ -15,6 +16,8 @@ import (
 )
 
 func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) error {
+	go metrics.Run(metrics.Config{Addr: comCnf.PrometheusAddress})
+
 	authClient, err := authClient.New(comCnf.AuthAddress)
 	if err != nil {
 		return err
@@ -44,13 +47,21 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 
 	defer logClient.Close()
 
-	kafkaClient := kafka.New(kafkaCnf.Addr, kafkaCnf.Topic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
-	err = kafkaClient.Connect(kafkaCnf.NumPartitions > 0)
+	kafkaTaskClient := kafka.New(kafkaCnf.Addr, kafkaCnf.TaskTopic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
+	err = kafkaTaskClient.Connect(kafkaCnf.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
-	defer kafkaClient.Close()
+	defer kafkaTaskClient.Close()
+
+	kafkaLogClient := kafka.New(kafkaCnf.Addr, kafkaCnf.LogTopic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
+	err = kafkaLogClient.Connect(kafkaCnf.NumPartitions > 0)
+	if err != nil {
+		return err
+	}
+
+	defer kafkaLogClient.Close()
 
 	lis, err := net.Listen("tcp", comCnf.SelfAddress)
 	if err != nil {
@@ -59,7 +70,8 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 
 	s := &pbServer{
 		auth:         authClient,
-		kafka:        kafkaClient,
+		kafkaTask:    kafkaTaskClient,
+		kafkaLog:     kafkaLogClient,
 		notification: notificationClient,
 		log:          logClient,
 		redis:        redisClient,

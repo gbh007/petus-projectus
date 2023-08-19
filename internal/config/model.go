@@ -20,7 +20,8 @@ type Database struct {
 
 type Kafka struct {
 	Addr          string `envconfig:"default=kafka:9092"`
-	Topic         string `envconfig:"default=gate"`
+	TaskTopic     string `envconfig:"default=gate"`
+	LogTopic      string `envconfig:"default=log"`
 	GroupID       string `envconfig:"optional"`
 	NumPartitions int    `envconfig:"optional"`
 }

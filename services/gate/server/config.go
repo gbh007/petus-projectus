@@ -1,7 +1,8 @@
 package server
 
 type KafkaConfig struct {
-	Topic         string
+	TaskTopic     string
+	LogTopic      string
 	GroupID       string
 	Addr          string
 	NumPartitions int
@@ -13,4 +14,5 @@ type CommunicationConfig struct {
 	LogAddress          string
 	NotificationAddress string
 	RedisAddress        string
+	PrometheusAddress   string
 }

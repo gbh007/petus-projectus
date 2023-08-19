@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/internal/config"
+	"app/internal/metrics"
 	"app/services/gate/server"
 	"context"
 	"log"
@@ -18,6 +19,7 @@ type Config struct {
 	NotificationAddr string `envconfig:"default=notification:50051"`
 	LogAddr          string `envconfig:"default=log:50051"`
 	RedisAddr        string `envconfig:"default=redis:6379"`
+	PrometheusAddr   string `envconfig:"default=pushgateway:9091"`
 }
 
 func main() {
@@ -39,6 +41,8 @@ func main() {
 
 	log.Println("server start")
 
+	metrics.InstanceName = "gate"
+
 	err = server.Run(
 		ctx,
 		server.CommunicationConfig{
@@ -47,10 +51,12 @@ func main() {
 			LogAddress:          cfg.LogAddr,
 			NotificationAddress: cfg.NotificationAddr,
 			RedisAddress:        cfg.RedisAddr,
+			PrometheusAddress:   cfg.PrometheusAddr,
 		},
 		server.KafkaConfig{
 			Addr:          cfg.Kafka.Addr,
-			Topic:         cfg.Kafka.Topic,
+			TaskTopic:     cfg.Kafka.TaskTopic,
+			LogTopic:      cfg.Kafka.LogTopic,
 			NumPartitions: cfg.Kafka.NumPartitions,
 		},
 	)

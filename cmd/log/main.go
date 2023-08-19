@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/internal/config"
+	"app/internal/metrics"
 	"app/services/log/server"
 	"context"
 	"log"
@@ -36,12 +37,14 @@ func main() {
 
 	log.Println("server start")
 
+	metrics.InstanceName = "log"
+
 	err = server.Run(
 		ctx,
 		cfg.Self.Full(),
 		server.KafkaConfig{
 			Addr:    cfg.Kafka.Addr,
-			Topic:   cfg.Kafka.Topic,
+			Topic:   cfg.Kafka.LogTopic,
 			GroupID: cfg.Kafka.GroupID,
 		},
 		server.DBConfig{

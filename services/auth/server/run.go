@@ -6,11 +6,9 @@ import (
 	"app/services/auth/internal/storage"
 	"app/services/gate/dto"
 	"context"
-	"log"
 	"net"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 )
 
 type DBConfig struct {
@@ -41,7 +39,7 @@ func Run(ctx context.Context, addr string, cfg DBConfig, redisAddr string) error
 		redis: redisClient,
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor))
 	pb.RegisterAuthServer(grpcServer, s)
 
 	go func() {
@@ -55,15 +53,4 @@ func Run(ctx context.Context, addr string, cfg DBConfig, redisAddr string) error
 	}
 
 	return nil
-}
-
-func logRoute(ctx context.Context, routeName string) {
-	addr := "unknown"
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		addr = p.Addr.String()
-	}
-
-	log.Printf("handle %s %s\n", routeName, addr)
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/internal/config"
+	"app/internal/metrics"
 	"app/services/handler/server"
 	"context"
 	"log"
@@ -35,11 +36,13 @@ func main() {
 
 	log.Println("server start")
 
+	metrics.InstanceName = "handler"
+
 	err = server.Run(
 		ctx,
 		server.KafkaConfig{
 			Addr:    cfg.Kafka.Addr,
-			Topic:   cfg.Kafka.Topic,
+			Topic:   cfg.Kafka.TaskTopic,
 			GroupID: cfg.Kafka.GroupID,
 		},
 		server.RabbitMQConfig{

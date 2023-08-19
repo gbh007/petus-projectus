@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/internal/config"
+	"app/internal/metrics"
 	"app/services/auth/server"
 	"context"
 	"log"
@@ -35,6 +36,8 @@ func main() {
 	defer cancelNotify()
 
 	log.Println("server start")
+
+	metrics.InstanceName = "auth"
 
 	err = server.Run(ctx,
 		cfg.Self.Full(),

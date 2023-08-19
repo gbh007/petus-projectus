@@ -1,6 +1,7 @@
 package server
 
 import (
+	"app/internal/metrics"
 	"app/services/gate/dto"
 	"context"
 	"crypto/sha256"
@@ -8,9 +9,26 @@ import (
 	"log"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
+
+const (
+	typeLabelName = "type"
+)
+
+var (
+	cacheTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+		Name: "petus_projectus_gate_cache_time",
+		Help: "Суммарное время обращений по кешу",
+	}, []string{typeLabelName})
+)
+
+func registerCacheHandle(t string, d time.Duration) {
+	cacheTimeTotal.WithLabelValues(t).Observe(d.Seconds())
+}
 
 func logRoute(ctx context.Context, action string) (string, dto.KafkaData) {
 	requestID := randomSHA256String()
@@ -42,8 +60,4 @@ func logRoute(ctx context.Context, action string) (string, dto.KafkaData) {
 
 func randomSHA256String() string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(time.Now().String())))
-}
-
-func logStopwatch(name string, d time.Duration) {
-	log.Printf("stopwatch %s - %s\n", name, d.String())
 }

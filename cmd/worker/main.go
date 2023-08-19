@@ -2,6 +2,7 @@ package main
 
 import (
 	"app/internal/config"
+	"app/internal/metrics"
 	"app/services/worker/server"
 	"context"
 	"log"
@@ -35,6 +36,8 @@ func main() {
 	defer cancelNotify()
 
 	log.Println("server start")
+
+	metrics.InstanceName = "worker"
 
 	err = server.Run(
 		ctx,

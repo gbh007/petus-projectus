@@ -18,8 +18,6 @@ type authServer struct {
 }
 
 func (s *authServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	logRoute(ctx, "login")
-
 	login := strings.ToLower(req.GetLogin())
 	pass := req.GetPassword()
 
@@ -41,8 +39,6 @@ func (s *authServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Login
 }
 
 func (s *authServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	logRoute(ctx, "register")
-
 	login := strings.ToLower(req.GetLogin())
 	pass := req.GetPassword()
 
@@ -60,8 +56,6 @@ func (s *authServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb
 }
 
 func (s *authServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	logRoute(ctx, "logout")
-
 	err := s.deleteSession(ctx, req.GetToken())
 	if err != nil {
 		return &pb.LogoutResponse{
@@ -82,8 +76,6 @@ func (s *authServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Log
 }
 
 func (s *authServer) Info(ctx context.Context, req *pb.InfoRequest) (*pb.InfoResponse, error) {
-	logRoute(ctx, "info")
-
 	user, err := s.getUser(ctx, req.GetToken())
 	if err != nil {
 		return &pb.InfoResponse{

@@ -20,6 +20,7 @@ services:
       - notification
       - log
       - redis
+      - pushgateway
 
   auth:
     build:
@@ -37,6 +38,7 @@ services:
     depends_on:
       - mariadb
       - redis
+      - pushgateway
 
   handler:
     build:
@@ -55,6 +57,7 @@ services:
     depends_on:
       - kafka
       - rabbitmq
+      - pushgateway
 
   log:
     build:
@@ -76,6 +79,7 @@ services:
     depends_on:
       - kafka
       - clickhouse
+      - pushgateway
 
   worker:
     build:
@@ -98,6 +102,7 @@ services:
       - rabbitmq
       - notification
       - clickhouse
+      - pushgateway
 
   notification:
     build:
@@ -117,6 +122,7 @@ services:
       replicas: 2
     depends_on:
       - mariadb
+      - pushgateway
 
   mariadb:
     image: mariadb:11
@@ -189,6 +195,22 @@ services:
     volumes:
       - "redis-data:/data"
 
+  prometheus:
+    image: prom/prometheus:v2.43.0
+    container_name: prometheus
+    restart: always
+    volumes:
+      - "./deployments/prometheus-dev.yml:/etc/prometheus/prometheus.yml:ro"
+      - "prometheus-data:/prometheus"
+    ports:
+      - 19090:9090
+    depends_on:
+      - pushgateway
+
+  pushgateway:
+    image: prom/pushgateway:v1.6.0
+    restart: always
+
 volumes:
   mariadb:
   kafka-secrets:
@@ -200,3 +222,4 @@ volumes:
   clickhouse-log:
   rabbitmq-data:
   redis-data:
+  prometheus-data:
