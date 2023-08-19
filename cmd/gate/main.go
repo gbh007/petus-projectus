@@ -45,19 +45,19 @@ func main() {
 
 	err = server.Run(
 		ctx,
-		server.CommunicationConfig{
+		server.Config{
 			SelfAddress:         cfg.Self.Full(),
 			AuthAddress:         cfg.AuthAddr,
 			LogAddress:          cfg.LogAddr,
 			NotificationAddress: cfg.NotificationAddr,
 			RedisAddress:        cfg.RedisAddr,
 			PrometheusAddress:   cfg.PrometheusAddr,
-		},
-		server.KafkaConfig{
-			Addr:          cfg.Kafka.Addr,
-			TaskTopic:     cfg.Kafka.TaskTopic,
-			LogTopic:      cfg.Kafka.LogTopic,
-			NumPartitions: cfg.Kafka.NumPartitions,
+			Kafka: server.KafkaConfig{
+				Addr:          cfg.Kafka.Addr,
+				TaskTopic:     cfg.Kafka.TaskTopic,
+				LogTopic:      cfg.Kafka.LogTopic,
+				NumPartitions: cfg.Kafka.NumPartitions,
+			},
 		},
 	)
 	if err != nil {

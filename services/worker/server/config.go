@@ -13,4 +13,5 @@ type Config struct {
 	PrometheusAddress   string
 	DB                  DBConfig
 	RabbitMQ            RabbitMQConfig
+	RunnerCount         int
 }

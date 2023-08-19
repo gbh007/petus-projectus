@@ -8,11 +8,12 @@ type KafkaConfig struct {
 	NumPartitions int
 }
 
-type CommunicationConfig struct {
+type Config struct {
 	SelfAddress         string
 	AuthAddress         string
 	LogAddress          string
 	NotificationAddress string
 	RedisAddress        string
 	PrometheusAddress   string
+	Kafka               KafkaConfig
 }

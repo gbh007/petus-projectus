@@ -33,17 +33,24 @@ func (c *Client[T]) StartRead(ctx context.Context) (chan *T, error) {
 	c.out = make(chan *T)
 
 	go func() {
-		for msg := range messages {
-			v := new(T)
+		for {
+			select {
+			case <-ctx.Done():
+				return
 
-			err = json.Unmarshal(msg.Body, &v)
-			if err != nil {
-				log.Printf("%s: StartRead.read: %s\n", ErrRabbitMQClient, err)
+			case msg := <-messages:
+				v := new(T)
 
-				continue
+				err = json.Unmarshal(msg.Body, &v)
+				if err != nil {
+					log.Printf("%s: StartRead.read: %s\n", ErrRabbitMQClient, err)
+
+					continue
+				}
+
+				c.out <- v
+
 			}
-
-			c.out <- v
 		}
 	}()
 

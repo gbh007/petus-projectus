@@ -21,6 +21,10 @@ var (
 		Name: "petus_projectus_worker_business_handle_time",
 		Help: "Бизнесовое время обработки задачи в worker",
 	}, []string{resultLabelName})
+	activeTaskTotal = promauto.With(metrics.DefaultRegistry).NewGauge(prometheus.GaugeOpts{
+		Name: "petus_projectus_worker_active_task_total",
+		Help: "Общее количество активных задач в worker",
+	})
 )
 
 func registerHandleTime(d time.Duration) {

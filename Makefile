@@ -18,6 +18,7 @@ build:
 	$(BUILD_ENV) go build -o _build/worker ./cmd/worker
 	$(BUILD_ENV) go build -o _build/log ./cmd/log
 	$(BUILD_ENV) go build -o _build/notification ./cmd/notification
+	$(BUILD_ENV) go build -o _build/testbot ./cmd/testbot
 
 up: build
 	docker compose up -d --build

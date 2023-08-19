@@ -15,17 +15,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) error {
-	go metrics.Run(metrics.Config{Addr: comCnf.PrometheusAddress})
+func Run(ctx context.Context, cfg Config) error {
+	go metrics.Run(metrics.Config{Addr: cfg.PrometheusAddress})
 
-	authClient, err := authClient.New(comCnf.AuthAddress)
+	authClient, err := authClient.New(cfg.AuthAddress)
 	if err != nil {
 		return err
 	}
 
 	defer authClient.Close()
 
-	redisClient := redis.New[dto.UserInfo](comCnf.RedisAddress)
+	redisClient := redis.New[dto.UserInfo](cfg.RedisAddress)
 	err = redisClient.Connect(ctx)
 	if err != nil {
 		return err
@@ -33,37 +33,37 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 
 	defer redisClient.Close()
 
-	notificationClient, err := notificationClient.New(comCnf.NotificationAddress)
+	notificationClient, err := notificationClient.New(cfg.NotificationAddress)
 	if err != nil {
 		return err
 	}
 
 	defer notificationClient.Close()
 
-	logClient, err := logClient.New(comCnf.LogAddress)
+	logClient, err := logClient.New(cfg.LogAddress)
 	if err != nil {
 		return err
 	}
 
 	defer logClient.Close()
 
-	kafkaTaskClient := kafka.New(kafkaCnf.Addr, kafkaCnf.TaskTopic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
-	err = kafkaTaskClient.Connect(kafkaCnf.NumPartitions > 0)
+	kafkaTaskClient := kafka.New(cfg.Kafka.Addr, cfg.Kafka.TaskTopic, cfg.Kafka.GroupID, cfg.Kafka.NumPartitions)
+	err = kafkaTaskClient.Connect(cfg.Kafka.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
 	defer kafkaTaskClient.Close()
 
-	kafkaLogClient := kafka.New(kafkaCnf.Addr, kafkaCnf.LogTopic, kafkaCnf.GroupID, kafkaCnf.NumPartitions)
-	err = kafkaLogClient.Connect(kafkaCnf.NumPartitions > 0)
+	kafkaLogClient := kafka.New(cfg.Kafka.Addr, cfg.Kafka.LogTopic, cfg.Kafka.GroupID, cfg.Kafka.NumPartitions)
+	err = kafkaLogClient.Connect(cfg.Kafka.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
 	defer kafkaLogClient.Close()
 
-	lis, err := net.Listen("tcp", comCnf.SelfAddress)
+	lis, err := net.Listen("tcp", cfg.SelfAddress)
 	if err != nil {
 		return err
 	}

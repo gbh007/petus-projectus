@@ -124,6 +124,19 @@ services:
       - mariadb
       - pushgateway
 
+  testbot:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      args:
+        BINARY_PATH: _build/testbot
+    restart: always
+    environment:
+      BOT_USER_COUNT: 100
+      BOT_MAX_PAUSE: 3
+    depends_on:
+      - gate
+
   mariadb:
     image: mariadb:11
     restart: always

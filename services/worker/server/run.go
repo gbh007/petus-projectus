@@ -7,9 +7,7 @@ import (
 	notificationServerClient "app/services/notification/client"
 	"app/services/worker/internal/storage"
 	"context"
-	"fmt"
-	"log"
-	"time"
+	"sync"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -40,77 +38,29 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-label1:
-	for {
-		select {
-		case msg := <-messages:
-			handle(ctx, notificationClient, msg, db)
+	runnerCtx, runnerCnl := context.WithCancel(context.TODO())
+	runnerWg := new(sync.WaitGroup)
 
-		case <-ctx.Done():
-			break label1
+	for i := 0; i < cfg.RunnerCount; i++ {
+		runnerWg.Add(1)
+
+		r := &runner{
+			notification: notificationClient,
+			db:           db,
+			queue:        messages,
 		}
 
+		go func() {
+			defer runnerWg.Done()
+			r.run(runnerCtx)
+		}()
 	}
+
+	<-ctx.Done()
+
+	runnerCnl()
+
+	runnerWg.Wait()
 
 	return nil
-}
-
-// FIXME: рефакторинг сигнатуры
-func handle(ctx context.Context, notificationClient *notificationServerClient.Client, data *handlerdto.RabbitMQData, db *storage.Database) {
-	log.Printf("accept %#+v\n", data)
-
-	startTime := time.Now()
-
-	n := &notificationServerClient.Notification{
-		Kind: notificationServerClient.ButtonKind,
-	}
-
-	errText := ""
-
-	result, resultText, err := someBusinessLogic(data.Duration, data.Chance)
-	if err != nil {
-		n.Level = notificationServerClient.ErrorLevel
-		n.Title = "Ошибка"
-		n.Body = fmt.Sprintf("Ошибка во время выполнения:\n%s", err.Error())
-
-		errText = err.Error()
-	} else {
-		n.Level = notificationServerClient.SuccessLevel
-		n.Title = "Завершено"
-		n.Body = resultText
-	}
-
-	businessEndTime := time.Now()
-
-	log.Printf("finished %s = %#+v\n", data.RequestID, n)
-
-	dbCtx, dbCnl := context.WithTimeout(ctx, time.Second*5)
-	defer dbCnl()
-
-	err = db.InsertTaskResult(dbCtx, &storage.TaskResult{
-		UserID:     data.UserID,
-		Chance:     data.Chance,
-		Duration:   data.Duration,
-		Result:     result,
-		ResultText: resultText,
-		ErrorText:  errText,
-		StartTime:  startTime,
-		EndTime:    businessEndTime,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	notificationCtx, notificationCnl := context.WithTimeout(ctx, time.Second*10)
-	defer notificationCnl()
-
-	err = notificationClient.New(notificationCtx, data.UserID, n)
-	if err != nil {
-		log.Println(err)
-	}
-
-	// Общее время выполнения
-	registerHandleTime(time.Since(startTime))
-	// Бизнесовое время выполнения
-	registerBusinessHandleTime(errText == "", businessEndTime.Sub(startTime))
 }

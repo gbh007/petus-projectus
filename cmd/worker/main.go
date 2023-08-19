@@ -17,6 +17,7 @@ type Config struct {
 	DB               config.Database
 	NotificationAddr string `envconfig:"default=notification:50051"`
 	PrometheusAddr   string `envconfig:"default=pushgateway:9091"`
+	RunnerCount      int    `envconfig:"default=20"`
 }
 
 func main() {
@@ -57,6 +58,7 @@ func main() {
 				Addr:      cfg.RabbitMQ.Addr,
 				QueueName: cfg.RabbitMQ.Queue,
 			},
+			RunnerCount: cfg.RunnerCount,
 		},
 	)
 	if err != nil {

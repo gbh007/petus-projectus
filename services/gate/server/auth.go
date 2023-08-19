@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const cacheTTL = time.Hour
+const cacheTTL = time.Minute * 5
 
 func (s *pbServer) authInfo(ctx context.Context) (*authClient.UserInfo, error) {
 	info, ok := ctx.Value(userInfoKey).(*authClient.UserInfo)
