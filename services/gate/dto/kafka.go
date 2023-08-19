@@ -2,16 +2,13 @@ package dto
 
 import "time"
 
-const (
-	ActionLogin    = "login"
-	ActionRegister = "register"
-	ActionButton   = "button"
-	ActionList     = "list"
-	ActionRead     = "read"
-	ActionActivity = "activity"
-)
+type KafkaTaskData struct {
+	UserID       int64     `json:"user_id,omitempty"`
+	Chance       int64     `json:"chance,omitempty"`
+	Duration     int64     `json:"duration,omitempty"`
+}
 
-type KafkaData struct {
+type KafkaLogData struct {
 	Addr         string    `json:"addr,omitempty"`
 	UserID       int64     `json:"user_id,omitempty"`
 	SessionToken string    `json:"session_token,omitempty"`

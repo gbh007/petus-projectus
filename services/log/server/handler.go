@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"time"
 )
 
 type handler struct {
@@ -18,7 +19,7 @@ type handler struct {
 func (h *handler) Run(ctx context.Context) error {
 label1:
 	for {
-		data := new(gatedto.KafkaData)
+		data := new(gatedto.KafkaLogData)
 		key, err := h.kafka.Read(ctx, data)
 		if err != nil {
 			log.Println(err.Error())
@@ -37,10 +38,14 @@ label1:
 	return nil
 }
 
-func (h *handler) handle(ctx context.Context, key string, data *gatedto.KafkaData) {
+func (h *handler) handle(ctx context.Context, key string, data *gatedto.KafkaLogData) {
+	startTime := time.Now()
 	log.Printf("accept %s %#+v\n", key, data)
 
-	err := h.db.InsertUserLog(ctx, &storage.UserLog{
+	dbCtx, dbCnl := context.WithTimeout(ctx, time.Second*5)
+	defer dbCnl()
+
+	err := h.db.InsertUserLog(dbCtx, &storage.UserLog{
 		RequestID: key,
 		Addr:      data.Addr,
 		UserID: sql.NullInt64{
@@ -65,4 +70,6 @@ func (h *handler) handle(ctx context.Context, key string, data *gatedto.KafkaDat
 	if err != nil {
 		log.Println(key, err)
 	}
+
+	registerHandleTime(time.Since(startTime))
 }

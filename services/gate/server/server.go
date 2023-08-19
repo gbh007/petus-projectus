@@ -3,22 +3,16 @@ package server
 import (
 	"app/clients/kafka"
 	"app/clients/redis"
-	"app/internal/metrics"
 	authClient "app/services/auth/client"
 	"app/services/gate/dto"
-	gatedto "app/services/gate/dto"
 	"app/services/gate/internal/pb"
 	logClient "app/services/log/client"
 	notificationClient "app/services/notification/client"
 	"context"
 	"fmt"
-	"log"
-	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-const cacheTTL = time.Hour
 
 type pbServer struct {
 	pb.UnimplementedGateServer
@@ -33,66 +27,11 @@ type pbServer struct {
 	redis        *redis.Client[dto.UserInfo]
 }
 
-func (s *pbServer) authInfo(ctx context.Context, token string) (*authClient.UserInfo, error) {
-	redisStart := time.Now()
-
-	redisData, err := s.redis.Get(token)
-
-	redisFinish := time.Now()
-	registerCacheHandle("redis", redisFinish.Sub(redisStart))
-
-	if err != nil {
-		// Ошибка отсутствия значения также логируется для отладки
-		log.Printf("%s error from redis: %s\n", token, err.Error())
-	} else {
-		return &authClient.UserInfo{
-			ID: redisData.ID,
-		}, nil
-	}
-
-	authStart := time.Now()
-
-	info, err := s.auth.Info(ctx, token)
-
-	authFinish := time.Now()
-	registerCacheHandle("auth", authFinish.Sub(authStart))
-
+func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
 		return nil, err
 	}
-
-	// В данном случае кешер сеттится специально здесь, а не в сервисе авторизации
-	err = s.redis.Set(token, dto.UserInfo{ID: info.ID}, cacheTTL)
-	if err != nil {
-		log.Println(err)
-	}
-
-	return info, nil
-}
-
-func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	requestStart := time.Now()
-	requestID, kData := logRoute(ctx, gatedto.ActionLogin)
-	defer func() {
-		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
-
-		// Ошибка не имеет значения в данном случае
-		_ = s.kafkaLog.Write(ctx, requestID, kData)
-	}()
-
-	token, err := s.auth.Login(ctx, req.GetLogin(), req.GetPassword())
-	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.LoginResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
-	}
-
-	kData.SessionToken = token
 
 	return &pb.LoginResponse{
 		Token: token,
@@ -100,121 +39,51 @@ func (s *pbServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRe
 }
 
 func (s *pbServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	requestStart := time.Now()
-	requestID, kData := logRoute(ctx, gatedto.ActionRegister)
-	defer func() {
-		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
-
-		// Ошибка не имеет значения в данном случае
-		_ = s.kafkaLog.Write(ctx, requestID, kData)
-	}()
-
 	err := s.auth.Register(ctx, req.GetLogin(), req.GetPassword())
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.RegisterResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return new(pb.RegisterResponse), nil
 }
 
 func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.ButtonResponse, error) {
-	requestStart := time.Now()
-	requestID, kData := logRoute(ctx, gatedto.ActionButton)
-
-	defer func() {
-		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
-
-		// Ошибка не имеет значения в данном случае
-		_ = s.kafkaLog.Write(ctx, requestID, kData)
-	}()
+	requestID, _ := ctx.Value(requestIDKey).(string)
 
 	if req.GetDuration() <= 0 {
 		err := fmt.Errorf("invalid duration %d", req.GetDuration())
-		kData.ErrorText = err.Error()
 
-		return &pb.ButtonResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
-	info, err := s.authInfo(ctx, req.GetToken())
+	info, err := s.authInfo(ctx)
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.ButtonResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
-	kData.UserID = info.ID
-	kData.SessionToken = req.GetToken()
-	kData.Chance = req.GetChance()
-	kData.Duration = req.GetDuration()
+	kData := dto.KafkaTaskData{
+		UserID:   info.ID,
+		Chance:   req.GetChance(),
+		Duration: req.GetDuration(),
+	}
 
 	err = s.kafkaTask.Write(ctx, requestID, kData)
 	if err != nil {
-		// Небольшой костыль для логирования метрик
-		kData.ErrorText = err.Error()
-
-		return &pb.ButtonResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return new(pb.ButtonResponse), nil
 }
 
 func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*pb.NotificationListResponse, error) {
-	requestStart := time.Now()
-	requestID, kData := logRoute(ctx, gatedto.ActionList)
-	defer func() {
-		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
-
-		// Ошибка не имеет значения в данном случае
-		_ = s.kafkaLog.Write(ctx, requestID, kData)
-	}()
-
-	info, err := s.authInfo(ctx, req.GetToken())
+	info, err := s.authInfo(ctx)
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.NotificationListResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
-
-	kData.UserID = info.ID
-	kData.SessionToken = req.GetToken()
 
 	rawNotifications, err := s.notification.List(ctx, info.ID)
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.NotificationListResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	notifications := make([]*pb.NotificationData, len(rawNotifications))
@@ -235,29 +104,10 @@ func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*
 }
 
 func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*pb.NotificationReadResponse, error) {
-	requestStart := time.Now()
-	requestID, kData := logRoute(ctx, gatedto.ActionRead)
-	defer func() {
-		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
-
-		// Ошибка не имеет значения в данном случае
-		_ = s.kafkaLog.Write(ctx, requestID, kData)
-	}()
-
-	info, err := s.authInfo(ctx, req.GetToken())
+	info, err := s.authInfo(ctx)
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.NotificationReadResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
-
-	kData.UserID = info.ID
-	kData.SessionToken = req.GetToken()
 
 	if req.GetAll() {
 		err = s.notification.ReadAll(ctx, info.ID)
@@ -267,54 +117,21 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 	}
 
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.NotificationReadResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return new(pb.NotificationReadResponse), nil
 }
 
 func (s *pbServer) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
-	requestStart := time.Now()
-	requestID, kData := logRoute(ctx, gatedto.ActionActivity)
-	defer func() {
-		metrics.LogRequest(kData.Action, kData.ErrorText == "", time.Since(requestStart))
-
-		// Ошибка не имеет значения в данном случае
-		_ = s.kafkaLog.Write(ctx, requestID, kData)
-	}()
-
-	info, err := s.authInfo(ctx, req.GetToken())
+	info, err := s.authInfo(ctx)
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.ActivityResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
-
-	kData.UserID = info.ID
-	kData.SessionToken = req.GetToken()
 
 	data, err := s.log.Activity(ctx, info.ID)
 	if err != nil {
-		kData.ErrorText = err.Error()
-
-		return &pb.ActivityResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return &pb.ActivityResponse{

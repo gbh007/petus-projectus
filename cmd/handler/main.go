@@ -13,8 +13,9 @@ import (
 )
 
 type Config struct {
-	RabbitMQ config.RabbitMQ
-	Kafka    config.Kafka
+	RabbitMQ       config.RabbitMQ
+	Kafka          config.Kafka
+	PrometheusAddr string `envconfig:"default=pushgateway:9091"`
 }
 
 func main() {
@@ -40,16 +41,19 @@ func main() {
 
 	err = server.Run(
 		ctx,
-		server.KafkaConfig{
-			Addr:    cfg.Kafka.Addr,
-			Topic:   cfg.Kafka.TaskTopic,
-			GroupID: cfg.Kafka.GroupID,
-		},
-		server.RabbitMQConfig{
-			Username:  cfg.RabbitMQ.User,
-			Password:  cfg.RabbitMQ.Pass,
-			Addr:      cfg.RabbitMQ.Addr,
-			QueueName: cfg.RabbitMQ.Queue,
+		server.Config{
+			PrometheusAddress: cfg.PrometheusAddr,
+			Kafka: server.KafkaConfig{
+				Addr:    cfg.Kafka.Addr,
+				Topic:   cfg.Kafka.TaskTopic,
+				GroupID: cfg.Kafka.GroupID,
+			},
+			RabbitMQ: server.RabbitMQConfig{
+				Username:  cfg.RabbitMQ.User,
+				Password:  cfg.RabbitMQ.Pass,
+				Addr:      cfg.RabbitMQ.Addr,
+				QueueName: cfg.RabbitMQ.Queue,
+			},
 		},
 	)
 	if err != nil {

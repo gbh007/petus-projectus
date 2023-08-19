@@ -5,6 +5,7 @@ import (
 	"app/services/notification/internal/storage"
 	"context"
 	"database/sql"
+	"fmt"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -16,25 +17,13 @@ type pbServer struct {
 }
 
 func (s *pbServer) New(ctx context.Context, req *pb.NewRequest) (*pb.NewResponse, error) {
-	logRoute(ctx, "new")
-
 	userID := req.GetUserID()
 	if userID == 0 {
-		return &pb.NewResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: "missing user id",
-			},
-		}, nil
+		return nil, fmt.Errorf("missing user id")
 	}
 
 	if req.GetData() == nil {
-		return &pb.NewResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: "missing notification",
-			},
-		}, nil
+		return nil, fmt.Errorf("missing notification")
 	}
 
 	err := s.db.CreateNotification(ctx, &storage.Notification{
@@ -49,38 +38,21 @@ func (s *pbServer) New(ctx context.Context, req *pb.NewRequest) (*pb.NewResponse
 		Created: req.GetData().GetCreated().AsTime(),
 	})
 	if err != nil {
-		return &pb.NewResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return &pb.NewResponse{}, nil
 }
 
 func (s *pbServer) List(ctx context.Context, req *pb.ListRequest) (*pb.ListResponse, error) {
-	logRoute(ctx, "list")
-
 	userID := req.GetUserID()
 	if userID == 0 {
-		return &pb.ListResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: "missing user id",
-			},
-		}, nil
+		return nil, fmt.Errorf("missing user id")
 	}
 
 	rawNotifications, err := s.db.GetNotificationsByUserID(ctx, userID)
 	if err != nil {
-		return &pb.ListResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	notifications := make([]*pb.NotificationData, len(rawNotifications))
@@ -102,52 +74,28 @@ func (s *pbServer) List(ctx context.Context, req *pb.ListRequest) (*pb.ListRespo
 }
 
 func (s *pbServer) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
-	logRoute(ctx, "read")
-
 	id := req.GetId()
 	if id == 0 {
-		return &pb.ReadResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: "missing id",
-			},
-		}, nil
+		return nil, fmt.Errorf("missing id")
 	}
 
 	err := s.db.MarkReadByID(ctx, id)
 	if err != nil {
-		return &pb.ReadResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return &pb.ReadResponse{}, nil
 }
 
 func (s *pbServer) ReadAll(ctx context.Context, req *pb.ReadAllRequest) (*pb.ReadAllResponse, error) {
-	logRoute(ctx, "read all")
-
 	userID := req.GetUserID()
 	if userID == 0 {
-		return &pb.ReadAllResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: "missing user id",
-			},
-		}, nil
+		return nil, fmt.Errorf("missing user id")
 	}
 
 	err := s.db.MarkReadByUserID(ctx, userID)
 	if err != nil {
-		return &pb.ReadAllResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return &pb.ReadAllResponse{}, nil

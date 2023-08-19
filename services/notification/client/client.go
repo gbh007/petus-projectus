@@ -41,7 +41,7 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) New(ctx context.Context, userID int64, n *Notification) error {
-	res, err := c.client.New(ctx, &pb.NewRequest{
+	_, err := c.client.New(ctx, &pb.NewRequest{
 		UserID: userID,
 		Data: &pb.NotificationData{
 			Kind:    n.Kind,
@@ -56,24 +56,12 @@ func (c *Client) New(ctx context.Context, userID int64, n *Notification) error {
 		return err
 	}
 
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
-		return err
-	}
-
 	return nil
 }
 
 func (c *Client) List(ctx context.Context, userID int64) ([]*Notification, error) {
 	res, err := c.client.List(ctx, &pb.ListRequest{UserID: userID})
 	if err != nil {
-		return nil, err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return nil, err
 	}
 
@@ -94,14 +82,8 @@ func (c *Client) List(ctx context.Context, userID int64) ([]*Notification, error
 }
 
 func (c *Client) Read(ctx context.Context, id int64) error {
-	res, err := c.client.Read(ctx, &pb.ReadRequest{Id: id})
+	_, err := c.client.Read(ctx, &pb.ReadRequest{Id: id})
 	if err != nil {
-		return err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return err
 	}
 
@@ -109,14 +91,8 @@ func (c *Client) Read(ctx context.Context, id int64) error {
 }
 
 func (c *Client) ReadAll(ctx context.Context, userID int64) error {
-	res, err := c.client.ReadAll(ctx, &pb.ReadAllRequest{UserID: userID})
+	_, err := c.client.ReadAll(ctx, &pb.ReadAllRequest{UserID: userID})
 	if err != nil {
-		return err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return err
 	}
 

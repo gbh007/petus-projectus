@@ -210,7 +210,7 @@ func renderNotification(ctx context.Context, c Controller) fyne.CanvasObject {
 			icon = widget.NewIcon(theme.WarningIcon())
 		}
 
-		title := widget.NewLabel(n.Title)
+		title := widget.NewLabel(n.Created.Format(time.RFC1123) + " " + n.Title)
 		body := widget.NewTextGridFromString(n.Body)
 
 		return container.NewHBox(
@@ -221,7 +221,7 @@ func renderNotification(ctx context.Context, c Controller) fyne.CanvasObject {
 		)
 	}
 
-	loginCallback := func() {
+	refreshCallback := func() {
 		alertBox.Hide()
 
 		data, err := c.Notifications(ctx)
@@ -248,7 +248,7 @@ func renderNotification(ctx context.Context, c Controller) fyne.CanvasObject {
 			return data[i].Created.After(data[j].Created)
 		})
 
-		for _, raw := range data {
+		for _, raw := range data[:10] {
 			notificationList.Add(newNotification(raw))
 		}
 	}
@@ -259,7 +259,7 @@ func renderNotification(ctx context.Context, c Controller) fyne.CanvasObject {
 	scrl.SetMinSize(fyne.NewSize(600, 500))
 
 	return container.NewVBox(
-		widget.NewButton("Обновить", loginCallback),
+		widget.NewButton("Обновить", refreshCallback),
 		alertBox,
 		scrl,
 	)

@@ -13,9 +13,10 @@ import (
 )
 
 type Config struct {
-	Self  config.Addr
-	Kafka config.Kafka
-	DB    config.Database
+	Self           config.Addr
+	Kafka          config.Kafka
+	DB             config.Database
+	PrometheusAddr string `envconfig:"default=pushgateway:9091"`
 }
 
 func main() {
@@ -41,17 +42,20 @@ func main() {
 
 	err = server.Run(
 		ctx,
-		cfg.Self.Full(),
-		server.KafkaConfig{
-			Addr:    cfg.Kafka.Addr,
-			Topic:   cfg.Kafka.LogTopic,
-			GroupID: cfg.Kafka.GroupID,
-		},
-		server.DBConfig{
-			Username:     cfg.DB.User,
-			Password:     cfg.DB.Pass,
-			Addr:         cfg.DB.Addr,
-			DatabaseName: cfg.DB.Name,
+		server.Config{
+			SelfAddress:       cfg.Self.Full(),
+			PrometheusAddress: cfg.PrometheusAddr,
+			Kafka: server.KafkaConfig{
+				Addr:    cfg.Kafka.Addr,
+				Topic:   cfg.Kafka.LogTopic,
+				GroupID: cfg.Kafka.GroupID,
+			},
+			DB: server.DBConfig{
+				Username:     cfg.DB.User,
+				Password:     cfg.DB.Pass,
+				Addr:         cfg.DB.Addr,
+				DatabaseName: cfg.DB.Name,
+			},
 		},
 	)
 	if err != nil {

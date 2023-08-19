@@ -6,6 +6,13 @@ type KafkaConfig struct {
 	Addr          string
 	NumPartitions int
 }
+
 type RabbitMQConfig struct {
 	Username, Password, Addr, QueueName string
+}
+
+type Config struct {
+	PrometheusAddress string
+	Kafka             KafkaConfig
+	RabbitMQ          RabbitMQConfig
 }

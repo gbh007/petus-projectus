@@ -23,12 +23,7 @@ func (s *authServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Login
 
 	token, err := s.createSession(ctx, login, pass)
 	if err != nil {
-		return &pb.LoginResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	// Кеш в редисе мог сеттится в этом месте
@@ -44,12 +39,7 @@ func (s *authServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb
 
 	_, err := s.createUser(ctx, login, pass)
 	if err != nil {
-		return &pb.RegisterResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return new(pb.RegisterResponse), nil
@@ -58,12 +48,7 @@ func (s *authServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb
 func (s *authServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
 	err := s.deleteSession(ctx, req.GetToken())
 	if err != nil {
-		return &pb.LogoutResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	// Инвалидация кеша
@@ -78,12 +63,7 @@ func (s *authServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Log
 func (s *authServer) Info(ctx context.Context, req *pb.InfoRequest) (*pb.InfoResponse, error) {
 	user, err := s.getUser(ctx, req.GetToken())
 	if err != nil {
-		return &pb.InfoResponse{
-			Error: &pb.ErrorInfo{
-				Code: "0",
-				Text: err.Error(),
-			},
-		}, nil
+		return nil, err
 	}
 
 	return &pb.InfoResponse{

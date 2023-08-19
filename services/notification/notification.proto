@@ -13,10 +13,6 @@ service Notification {
   rpc ReadAll(ReadAllRequest) returns (ReadAllResponse) {}
 }
 
-message ErrorInfo {
-  string code = 1;
-  string text = 2;
-}
 
 message NotificationData {
   string kind = 1;
@@ -32,31 +28,24 @@ message NewRequest {
   NotificationData data = 2;
 }
 
-message NewResponse {
-  ErrorInfo error = 1; 
-}
+message NewResponse {}
 
 message ListRequest {
   int64 userID = 1;
 }
 
 message ListResponse {
-  ErrorInfo error = 1;
-  repeated NotificationData list = 2;
+  repeated NotificationData list = 1;
 }
 
 message ReadRequest {
   int64 id = 1;
 }
 
-message ReadResponse {
-  ErrorInfo error = 1;
-}
+message ReadResponse {}
 
 message ReadAllRequest {
   int64 userID = 1;
 }
 
-message ReadAllResponse {
-  ErrorInfo error = 1;
-}
+message ReadAllResponse {}

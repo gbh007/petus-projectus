@@ -1,12 +1,14 @@
 package client
 
 import (
+	"app/services/gate/internal"
 	"app/services/gate/internal/pb"
 	"context"
 	"errors"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type Client struct {
@@ -54,17 +56,11 @@ func (c *Client) Login(ctx context.Context, login, pass string) (string, error) 
 		return "", err
 	}
 
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
-		return "", err
-	}
-
 	return res.GetToken(), nil
 }
 
 func (c *Client) Register(ctx context.Context, login, pass string) error {
-	res, err := c.gateClient.Register(ctx, &pb.RegisterRequest{
+	_, err := c.gateClient.Register(ctx, &pb.RegisterRequest{
 		Login:    login,
 		Password: pass,
 	})
@@ -73,28 +69,17 @@ func (c *Client) Register(ctx context.Context, login, pass string) error {
 		return err
 	}
 
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
-		return err
-	}
-
 	return nil
 }
 
 func (c *Client) ButtonClick(ctx context.Context, token string, duration, chance int64) error {
-	res, err := c.gateClient.Button(ctx, &pb.ButtonRequest{
+	ctx = metadata.AppendToOutgoingContext(ctx, internal.SessionHeader, token)
+
+	_, err := c.gateClient.Button(ctx, &pb.ButtonRequest{
 		Duration: duration,
-		Token:    token,
 		Chance:   chance,
 	})
 	if err != nil {
-		return err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return err
 	}
 
@@ -102,18 +87,13 @@ func (c *Client) ButtonClick(ctx context.Context, token string, duration, chance
 }
 
 func (c *Client) Read(ctx context.Context, token string, all bool, id int64) error {
-	res, err := c.notificationClient.Read(ctx, &pb.NotificationReadRequest{
-		Token: token,
-		Id:    id,
-		All:   all,
+	ctx = metadata.AppendToOutgoingContext(ctx, internal.SessionHeader, token)
+
+	_, err := c.notificationClient.Read(ctx, &pb.NotificationReadRequest{
+		Id:  id,
+		All: all,
 	})
 	if err != nil {
-		return err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return err
 	}
 
@@ -121,16 +101,10 @@ func (c *Client) Read(ctx context.Context, token string, all bool, id int64) err
 }
 
 func (c *Client) List(ctx context.Context, token string) ([]*Notification, error) {
-	res, err := c.notificationClient.List(ctx, &pb.NotificationListRequest{
-		Token: token,
-	})
+	ctx = metadata.AppendToOutgoingContext(ctx, internal.SessionHeader, token)
+
+	res, err := c.notificationClient.List(ctx, new(pb.NotificationListRequest))
 	if err != nil {
-		return nil, err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return nil, err
 	}
 
@@ -151,16 +125,10 @@ func (c *Client) List(ctx context.Context, token string) ([]*Notification, error
 }
 
 func (c *Client) Activity(ctx context.Context, token string) (int64, time.Time, error) {
-	res, err := c.logClient.Activity(ctx, &pb.ActivityRequest{
-		Token: token,
-	})
+	ctx = metadata.AppendToOutgoingContext(ctx, internal.SessionHeader, token)
+
+	res, err := c.logClient.Activity(ctx, new(pb.ActivityRequest))
 	if err != nil {
-		return 0, time.Time{}, err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return 0, time.Time{}, err
 	}
 

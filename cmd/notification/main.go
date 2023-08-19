@@ -13,8 +13,9 @@ import (
 )
 
 type Config struct {
-	Self config.Addr
-	DB   config.Database
+	Self           config.Addr
+	DB             config.Database
+	PrometheusAddr string `envconfig:"default=pushgateway:9091"`
 }
 
 func main() {
@@ -38,13 +39,17 @@ func main() {
 
 	metrics.InstanceName = "notification"
 
-	err = server.Run(ctx,
-		cfg.Self.Full(),
-		server.DBConfig{
-			Username:     cfg.DB.User,
-			Password:     cfg.DB.Pass,
-			Addr:         cfg.DB.Addr,
-			DatabaseName: cfg.DB.Name,
+	err = server.Run(
+		ctx,
+		server.Config{
+			SelfAddress:       cfg.Self.Full(),
+			PrometheusAddress: cfg.PrometheusAddr,
+			DB: server.DBConfig{
+				Username:     cfg.DB.User,
+				Password:     cfg.DB.Pass,
+				Addr:         cfg.DB.Addr,
+				DatabaseName: cfg.DB.Name,
+			},
 		},
 	)
 	if err != nil {

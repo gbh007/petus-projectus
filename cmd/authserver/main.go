@@ -13,9 +13,10 @@ import (
 )
 
 type Config struct {
-	Self      config.Addr
-	DB        config.Database
-	RedisAddr string `envconfig:"default=redis:6379"`
+	Self           config.Addr
+	DB             config.Database
+	RedisAddr      string `envconfig:"default=redis:6379"`
+	PrometheusAddr string `envconfig:"default=pushgateway:9091"`
 }
 
 func main() {
@@ -40,14 +41,17 @@ func main() {
 	metrics.InstanceName = "auth"
 
 	err = server.Run(ctx,
-		cfg.Self.Full(),
+		server.CommunicationConfig{
+			SelfAddress:       cfg.Self.Full(),
+			RedisAddress:      cfg.RedisAddr,
+			PrometheusAddress: cfg.PrometheusAddr,
+		},
 		server.DBConfig{
 			Username:     cfg.DB.User,
 			Password:     cfg.DB.Pass,
 			Addr:         cfg.DB.Addr,
 			DatabaseName: cfg.DB.Name,
 		},
-		cfg.RedisAddr,
 	)
 	if err != nil {
 		log.Println(err)

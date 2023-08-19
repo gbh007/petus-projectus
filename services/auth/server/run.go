@@ -2,6 +2,7 @@ package server
 
 import (
 	"app/clients/redis"
+	"app/internal/metrics"
 	"app/services/auth/internal/pb"
 	"app/services/auth/internal/storage"
 	"app/services/gate/dto"
@@ -15,8 +16,16 @@ type DBConfig struct {
 	Username, Password, Addr, DatabaseName string
 }
 
-func Run(ctx context.Context, addr string, cfg DBConfig, redisAddr string) error {
-	redisClient := redis.New[dto.UserInfo](redisAddr)
+type CommunicationConfig struct {
+	SelfAddress       string
+	RedisAddress      string
+	PrometheusAddress string
+}
+
+func Run(ctx context.Context, comCfg CommunicationConfig, cfg DBConfig) error {
+	go metrics.Run(metrics.Config{Addr: comCfg.PrometheusAddress})
+
+	redisClient := redis.New[dto.UserInfo](comCfg.RedisAddress)
 	err := redisClient.Connect(ctx)
 	if err != nil {
 		return err
@@ -24,7 +33,7 @@ func Run(ctx context.Context, addr string, cfg DBConfig, redisAddr string) error
 
 	defer redisClient.Close()
 
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", comCfg.SelfAddress)
 	if err != nil {
 		return err
 	}

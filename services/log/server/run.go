@@ -2,6 +2,7 @@ package server
 
 import (
 	"app/clients/kafka"
+	"app/internal/metrics"
 	"app/services/log/internal/pb"
 	"app/services/log/internal/storage"
 	"context"
@@ -12,20 +13,22 @@ import (
 	"google.golang.org/grpc"
 )
 
-func Run(ctx context.Context, addr string, kCnf KafkaConfig, dbCnf DBConfig) error {
-	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
+func Run(ctx context.Context, cfg Config) error {
+	go metrics.Run(metrics.Config{Addr: cfg.PrometheusAddress})
+
+	db, err := storage.Init(ctx, cfg.DB.Username, cfg.DB.Password, cfg.DB.Addr, cfg.DB.DatabaseName)
 	if err != nil {
 		return err
 	}
 
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", cfg.SelfAddress)
 	if err != nil {
 		return err
 	}
 
-	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
+	kafkaClient := kafka.New(cfg.Kafka.Addr, cfg.Kafka.Topic, cfg.Kafka.GroupID, cfg.Kafka.NumPartitions)
 
-	err = kafkaClient.Connect(kCnf.NumPartitions > 0)
+	err = kafkaClient.Connect(cfg.Kafka.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
@@ -41,7 +44,7 @@ func Run(ctx context.Context, addr string, kCnf KafkaConfig, dbCnf DBConfig) err
 		db: db,
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor))
 	pb.RegisterLogServer(grpcServer, server)
 
 	go func() {

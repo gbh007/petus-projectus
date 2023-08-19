@@ -1,27 +1,34 @@
 package server
 
 import (
+	"app/internal/metrics"
 	"app/services/notification/internal/pb"
 	"app/services/notification/internal/storage"
 	"context"
-	"log"
 	"net"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 )
 
 type DBConfig struct {
 	Username, Password, Addr, DatabaseName string
 }
 
-func Run(ctx context.Context, addr string, cfg DBConfig) error {
-	lis, err := net.Listen("tcp", addr)
+type Config struct {
+	SelfAddress       string
+	PrometheusAddress string
+	DB                DBConfig
+}
+
+func Run(ctx context.Context, cfg Config) error {
+	go metrics.Run(metrics.Config{Addr: cfg.PrometheusAddress})
+
+	lis, err := net.Listen("tcp", cfg.SelfAddress)
 	if err != nil {
 		return err
 	}
 
-	db, err := storage.Init(ctx, cfg.Username, cfg.Password, cfg.Addr, cfg.DatabaseName)
+	db, err := storage.Init(ctx, cfg.DB.Username, cfg.DB.Password, cfg.DB.Addr, cfg.DB.DatabaseName)
 	if err != nil {
 		return err
 	}
@@ -30,7 +37,7 @@ func Run(ctx context.Context, addr string, cfg DBConfig) error {
 		db: db,
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor))
 	pb.RegisterNotificationServer(grpcServer, s)
 
 	go func() {
@@ -44,15 +51,4 @@ func Run(ctx context.Context, addr string, cfg DBConfig) error {
 	}
 
 	return nil
-}
-
-func logRoute(ctx context.Context, routeName string) {
-	addr := "unknown"
-
-	p, ok := peer.FromContext(ctx)
-	if ok {
-		addr = p.Addr.String()
-	}
-
-	log.Printf("handle %s %s\n", routeName, addr)
 }

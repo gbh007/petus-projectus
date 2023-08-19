@@ -10,10 +10,6 @@ service Log {
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
 }
 
-message ErrorInfo {
-  string code = 1;
-  string text = 2;
-}
 
 message LogData {
   int64 requestCount = 1;
@@ -25,6 +21,5 @@ message ActivityRequest {
 }
 
 message ActivityResponse {
-  ErrorInfo error = 1;
-  LogData data = 2;
+  LogData data = 1;
 }

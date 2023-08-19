@@ -14,7 +14,8 @@ type Client struct {
 }
 
 type UserInfo struct {
-	ID int64
+	ID    int64
+	Token string
 }
 
 func New(addr string) (*Client, error) {
@@ -49,28 +50,16 @@ func (c *Client) Login(ctx context.Context, login, pass string) (string, error) 
 		return "", err
 	}
 
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
-		return "", err
-	}
-
 	return res.GetToken(), nil
 }
 
 func (c *Client) Register(ctx context.Context, login, pass string) error {
-	res, err := c.client.Register(ctx, &pb.RegisterRequest{
+	_, err := c.client.Register(ctx, &pb.RegisterRequest{
 		Login:    login,
 		Password: pass,
 	})
 
 	if err != nil {
-		return err
-	}
-
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
 		return err
 	}
 
@@ -86,13 +75,8 @@ func (c *Client) Info(ctx context.Context, token string) (*UserInfo, error) {
 		return nil, err
 	}
 
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
-		return nil, err
-	}
-
 	return &UserInfo{
-		ID: res.GetUserID(),
+		ID:    res.GetUserID(),
+		Token: token,
 	}, nil
 }

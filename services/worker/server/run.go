@@ -2,6 +2,7 @@ package server
 
 import (
 	"app/clients/rabbitmq"
+	"app/internal/metrics"
 	handlerdto "app/services/handler/dto"
 	notificationServerClient "app/services/notification/client"
 	"app/services/worker/internal/storage"
@@ -11,13 +12,15 @@ import (
 	"time"
 )
 
-func Run(ctx context.Context, dbCnf DBConfig, rCnf RabbitMQConfig, notificationAddr string) error {
-	db, err := storage.Init(ctx, dbCnf.Username, dbCnf.Password, dbCnf.Addr, dbCnf.DatabaseName)
+func Run(ctx context.Context, cfg Config) error {
+	go metrics.Run(metrics.Config{Addr: cfg.PrometheusAddress})
+
+	db, err := storage.Init(ctx, cfg.DB.Username, cfg.DB.Password, cfg.DB.Addr, cfg.DB.DatabaseName)
 	if err != nil {
 		return err
 	}
 
-	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](rCnf.Username, rCnf.Password, rCnf.Addr, rCnf.QueueName)
+	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](cfg.RabbitMQ.Username, cfg.RabbitMQ.Password, cfg.RabbitMQ.Addr, cfg.RabbitMQ.QueueName)
 	err = rabbitClient.Connect(ctx)
 	if err != nil {
 		return err
@@ -25,7 +28,7 @@ func Run(ctx context.Context, dbCnf DBConfig, rCnf RabbitMQConfig, notificationA
 
 	defer rabbitClient.Close()
 
-	notificationClient, err := notificationServerClient.New(notificationAddr)
+	notificationClient, err := notificationServerClient.New(cfg.NotificationAddress)
 	if err != nil {
 		return err
 	}
@@ -77,16 +80,14 @@ func handle(ctx context.Context, notificationClient *notificationServerClient.Cl
 		n.Body = resultText
 	}
 
-	endTime := time.Now()
+	businessEndTime := time.Now()
 
 	log.Printf("finished %s = %#+v\n", data.RequestID, n)
 
-	err = notificationClient.New(ctx, data.UserID, n)
-	if err != nil {
-		log.Println(err)
-	}
+	dbCtx, dbCnl := context.WithTimeout(ctx, time.Second*5)
+	defer dbCnl()
 
-	err = db.InsertTaskResult(ctx, &storage.TaskResult{
+	err = db.InsertTaskResult(dbCtx, &storage.TaskResult{
 		UserID:     data.UserID,
 		Chance:     data.Chance,
 		Duration:   data.Duration,
@@ -94,9 +95,22 @@ func handle(ctx context.Context, notificationClient *notificationServerClient.Cl
 		ResultText: resultText,
 		ErrorText:  errText,
 		StartTime:  startTime,
-		EndTime:    endTime,
+		EndTime:    businessEndTime,
 	})
 	if err != nil {
 		log.Println(err)
 	}
+
+	notificationCtx, notificationCnl := context.WithTimeout(ctx, time.Second*10)
+	defer notificationCnl()
+
+	err = notificationClient.New(notificationCtx, data.UserID, n)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// Общее время выполнения
+	registerHandleTime(time.Since(startTime))
+	// Бизнесовое время выполнения
+	registerBusinessHandleTime(errText == "", businessEndTime.Sub(startTime))
 }

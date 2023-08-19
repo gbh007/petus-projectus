@@ -48,12 +48,6 @@ func (c *Client) Activity(ctx context.Context, userID int64) (*LogData, error) {
 		return nil, err
 	}
 
-	if res.GetError() != nil {
-		err := errors.New(res.GetError().GetText())
-
-		return nil, err
-	}
-
 	return &LogData{
 		RequestCount: res.GetData().GetRequestCount(),
 		LastRequest:  res.GetData().GetLastRequest().AsTime(),

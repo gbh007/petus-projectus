@@ -77,7 +77,7 @@ func Run(ctx context.Context, comCnf CommunicationConfig, kafkaCnf KafkaConfig) 
 		redis:        redisClient,
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(s.logInterceptor))
 	pb.RegisterGateServer(grpcServer, s)
 	pb.RegisterNotificationServer(grpcServer, s)
 	pb.RegisterLogServer(grpcServer, s)

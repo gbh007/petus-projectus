@@ -10,3 +10,10 @@ type KafkaConfig struct {
 type DBConfig struct {
 	Username, Password, Addr, DatabaseName string
 }
+
+type Config struct {
+	SelfAddress       string
+	PrometheusAddress string
+	Kafka             KafkaConfig
+	DB                DBConfig
+}

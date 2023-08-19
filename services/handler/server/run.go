@@ -3,6 +3,7 @@ package server
 import (
 	"app/clients/kafka"
 	"app/clients/rabbitmq"
+	"app/internal/metrics"
 	gatedto "app/services/gate/dto"
 	handlerdto "app/services/handler/dto"
 	"context"
@@ -10,17 +11,19 @@ import (
 	"time"
 )
 
-func Run(ctx context.Context, kCnf KafkaConfig, rCnf RabbitMQConfig) error {
-	kafkaClient := kafka.New(kCnf.Addr, kCnf.Topic, kCnf.GroupID, kCnf.NumPartitions)
+func Run(ctx context.Context, cfg Config) error {
+	go metrics.Run(metrics.Config{Addr: cfg.PrometheusAddress})
 
-	err := kafkaClient.Connect(kCnf.NumPartitions > 0)
+	kafkaClient := kafka.New(cfg.Kafka.Addr, cfg.Kafka.Topic, cfg.Kafka.GroupID, cfg.Kafka.NumPartitions)
+
+	err := kafkaClient.Connect(cfg.Kafka.NumPartitions > 0)
 	if err != nil {
 		return err
 	}
 
 	defer kafkaClient.Close()
 
-	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](rCnf.Username, rCnf.Password, rCnf.Addr, rCnf.QueueName)
+	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](cfg.RabbitMQ.Username, cfg.RabbitMQ.Password, cfg.RabbitMQ.Addr, cfg.RabbitMQ.QueueName)
 	err = rabbitClient.Connect(ctx)
 	if err != nil {
 		return err
@@ -30,7 +33,7 @@ func Run(ctx context.Context, kCnf KafkaConfig, rCnf RabbitMQConfig) error {
 
 label1:
 	for {
-		data := new(gatedto.KafkaData)
+		data := new(gatedto.KafkaTaskData)
 		key, err := kafkaClient.Read(ctx, data)
 		if err != nil {
 			log.Println(err.Error())
@@ -49,22 +52,9 @@ label1:
 	return nil
 }
 
-func handle(ctx context.Context, key string, data *gatedto.KafkaData, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
+func handle(ctx context.Context, key string, data *gatedto.KafkaTaskData, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
+	startTime := time.Now()
 	log.Printf("accept %s %#+v\n", key, data)
-
-	switch {
-	case data.Action != gatedto.ActionButton:
-		log.Printf("skip %s - not button\n", key)
-
-		return
-
-	// Ошибки не обрабатываем
-	case data.ErrorText != "":
-		log.Printf("skip %s - has error\n", key)
-
-		return
-
-	}
 
 	rabbitCtx, rabbitCnl := context.WithTimeout(ctx, time.Second*10)
 	defer rabbitCnl()
@@ -80,4 +70,5 @@ func handle(ctx context.Context, key string, data *gatedto.KafkaData, rabbitClie
 	}
 
 	log.Printf("send to RabbitMQ %s\n", key)
+	registerHandleTime(time.Since(startTime))
 }

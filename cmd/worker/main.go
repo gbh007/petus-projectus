@@ -16,6 +16,7 @@ type Config struct {
 	RabbitMQ         config.RabbitMQ
 	DB               config.Database
 	NotificationAddr string `envconfig:"default=notification:50051"`
+	PrometheusAddr   string `envconfig:"default=pushgateway:9091"`
 }
 
 func main() {
@@ -41,19 +42,22 @@ func main() {
 
 	err = server.Run(
 		ctx,
-		server.DBConfig{
-			Username:     cfg.DB.User,
-			Password:     cfg.DB.Pass,
-			Addr:         cfg.DB.Addr,
-			DatabaseName: cfg.DB.Name,
+		server.Config{
+			NotificationAddress: cfg.NotificationAddr,
+			PrometheusAddress:   cfg.PrometheusAddr,
+			DB: server.DBConfig{
+				Username:     cfg.DB.User,
+				Password:     cfg.DB.Pass,
+				Addr:         cfg.DB.Addr,
+				DatabaseName: cfg.DB.Name,
+			},
+			RabbitMQ: server.RabbitMQConfig{
+				Username:  cfg.RabbitMQ.User,
+				Password:  cfg.RabbitMQ.Pass,
+				Addr:      cfg.RabbitMQ.Addr,
+				QueueName: cfg.RabbitMQ.Queue,
+			},
 		},
-		server.RabbitMQConfig{
-			Username:  cfg.RabbitMQ.User,
-			Password:  cfg.RabbitMQ.Pass,
-			Addr:      cfg.RabbitMQ.Addr,
-			QueueName: cfg.RabbitMQ.Queue,
-		},
-		cfg.NotificationAddr,
 	)
 	if err != nil {
 		log.Println(err)
