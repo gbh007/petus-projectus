@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 )
 
 func (c *Client[T]) StartRead(ctx context.Context) (chan *T, error) {
@@ -39,10 +40,13 @@ func (c *Client[T]) StartRead(ctx context.Context) (chan *T, error) {
 				return
 
 			case msg := <-messages:
+				startTime := time.Now()
 				v := new(T)
 
 				err = json.Unmarshal(msg.Body, &v)
 				if err != nil {
+					registerReadHandleTime(false, time.Since(startTime))
+
 					log.Printf("%s: StartRead.read: %s\n", ErrRabbitMQClient, err)
 
 					continue
@@ -50,6 +54,9 @@ func (c *Client[T]) StartRead(ctx context.Context) (chan *T, error) {
 
 				c.out <- v
 
+				// Находиться после занесения в очередь, по причине того,
+				// что чтение рассматриваем как процесс перемещения задачи в раннер.
+				registerReadHandleTime(true, time.Since(startTime))
 			}
 		}
 	}()

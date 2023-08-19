@@ -14,9 +14,9 @@
 Среднее время бизнес обработки задачи
 
 ```plain
-  sum by (instance) (rate(petus_projectus_worker_business_handle_time_sum[5m]))
+  sum by (instance) (rate(petus_projectus_worker_business_handle_time_sum[1m]))
 /
-  sum by (instance) (rate(petus_projectus_worker_business_handle_time_count[5m]))
+  sum by (instance) (rate(petus_projectus_worker_business_handle_time_count[1m]))
 ```
 
 Размер очереди задач

@@ -1,0 +1,32 @@
+package rabbitmq
+
+import (
+	"app/internal/metrics"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+const (
+	resultLabelName = "result"
+)
+
+var (
+	writeHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+		Name: "petus_projectus_rabbitmq_write_handle_time",
+		Help: "Время обработки записи в rabbitmq",
+	}, []string{resultLabelName})
+	readHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+		Name: "petus_projectus_rabbitmq_read_handle_time",
+		Help: "Время обработки чтения из rabbitmq",
+	}, []string{resultLabelName})
+)
+
+func registerWriteHandleTime(ok bool, d time.Duration) {
+	writeHandleTime.WithLabelValues(metrics.ConvertOk(ok)).Observe(d.Seconds())
+}
+
+func registerReadHandleTime(ok bool, d time.Duration) {
+	readHandleTime.WithLabelValues(metrics.ConvertOk(ok)).Observe(d.Seconds())
+}

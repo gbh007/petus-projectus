@@ -63,7 +63,7 @@ func (d *Database) GetNotificationsByUserID(ctx context.Context, userID int64) (
 }
 
 func (d *Database) MarkReadByID(ctx context.Context, id int64) error {
-	_, err := d.db.ExecContext(ctx, `UPDATE notifications SET "read" = TRUE WHERE id = ?;`, id)
+	_, err := d.db.ExecContext(ctx, "UPDATE notifications SET `read` = TRUE WHERE id = ?;", id)
 	if err != nil {
 		return fmt.Errorf("%w: %w", databaseErr, err)
 	}
@@ -72,7 +72,7 @@ func (d *Database) MarkReadByID(ctx context.Context, id int64) error {
 }
 
 func (d *Database) MarkReadByUserID(ctx context.Context, userID int64) error {
-	_, err := d.db.ExecContext(ctx, `UPDATE notifications SET "read" = TRUE WHERE user_id = ?;`, userID)
+	_, err := d.db.ExecContext(ctx, "UPDATE notifications SET `read` = TRUE WHERE user_id = ?;", userID)
 	if err != nil {
 		return fmt.Errorf("%w: %w", databaseErr, err)
 	}

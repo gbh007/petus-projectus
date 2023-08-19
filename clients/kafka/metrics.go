@@ -1,0 +1,32 @@
+package kafka
+
+import (
+	"app/internal/metrics"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+const (
+	resultLabelName = "result"
+)
+
+var (
+	writeHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+		Name: "petus_projectus_kafka_write_handle_time",
+		Help: "Время обработки записи в kafka",
+	}, []string{resultLabelName})
+	readHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+		Name: "petus_projectus_kafka_read_handle_time",
+		Help: "Время обработки чтения из kafka",
+	}, []string{resultLabelName})
+)
+
+func registerWriteHandleTime(ok bool, d time.Duration) {
+	writeHandleTime.WithLabelValues(metrics.ConvertOk(ok)).Observe(d.Seconds())
+}
+
+func registerReadHandleTime(ok bool, d time.Duration) {
+	readHandleTime.WithLabelValues(metrics.ConvertOk(ok)).Observe(d.Seconds())
+}

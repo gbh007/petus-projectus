@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -11,12 +12,17 @@ import (
 const contentTypeJSON = "application/json"
 
 func (c *Client[T]) Write(ctx context.Context, v T) error {
+	startTime := time.Now()
 	if c.ch == nil {
+		registerWriteHandleTime(false, time.Since(startTime))
+
 		return fmt.Errorf("%w: Write: %w", ErrRabbitMQClient, ErrChannelNotInitialized)
 	}
 
 	data, err := json.Marshal(v)
 	if err != nil {
+		registerWriteHandleTime(false, time.Since(startTime))
+
 		return fmt.Errorf("%w: Write: %w", ErrRabbitMQClient, err)
 	}
 
@@ -30,8 +36,12 @@ func (c *Client[T]) Write(ctx context.Context, v T) error {
 			Body:        data,
 		})
 	if err != nil {
+		registerWriteHandleTime(false, time.Since(startTime))
+
 		return fmt.Errorf("%w: Write: %w", ErrRabbitMQClient, err)
 	}
+
+	registerWriteHandleTime(true, time.Since(startTime))
 
 	return nil
 }

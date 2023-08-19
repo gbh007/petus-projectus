@@ -70,13 +70,13 @@ func (s *pbServer) logInterceptor(ctx context.Context, req interface{}, info *gr
 	// Выполняем сам запрос
 	resp, err = handler(ctx, req)
 
-	metrics.LogRequest(routeName, err == nil, time.Since(requestStart))
-
 	if err != nil {
 		kData.ErrorText = err.Error()
 	}
 
 	_ = s.kafkaLog.Write(ctx, requestID, kData)
+
+	metrics.LogRequest(routeName, err == nil, time.Since(requestStart))
 
 	return
 }
