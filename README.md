@@ -5,6 +5,7 @@
 ## TODO
 
 1. Рефакторинг работы с ошибками
+   - Привести в один вид, предварительно в `PACKAGE_NAME: FUNC_NAME: ERR`
 2. Рефакторинг логов пользователя (после реализации внутреннего функционала):
    - Необходимо добавить новые поля в сигнатуру через кафку
    - Необходимо добавить новые поля в БД
@@ -28,13 +29,13 @@ sum(petus_projectus_handler_handle_time_count) - sum(petus_projectus_worker_hand
 Среднее время выполнения запроса
 
 ```plain
-  sum by (instance) (rate(petus_projectus_pb_request_duration_seconds_sum[1m]))
+  sum by (instance) (rate(petus_projectus_protobuf_request_duration_sum[1m]))
 /
-  sum by (instance) (rate(petus_projectus_pb_request_duration_seconds_count[1m]))
+  sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))
 ```
 
 Количество запросов в минуту
 
 ```plain
-sum by (instance) (rate(petus_projectus_pb_request_duration_seconds_count[1m]))
+sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))
 ```

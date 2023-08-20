@@ -7,7 +7,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func (c *Client[T]) Connect(ctx context.Context) (err error) {
+func (c *Client[T]) Connect(_ context.Context) (err error) {
 	c.conn, err = amqp.Dial(fmt.Sprintf(
 		"amqp://%s:%s@%s/",
 		c.user, c.pass, c.addr,

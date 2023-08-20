@@ -32,7 +32,9 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-func runOneUser(ctx context.Context, maxPause int, maxTaskDuration int64, client *gateClient.Client) {
+func runOneUser( //nolint: gocognit,cyclop // не является бизнес логикой, сложность не критична
+	ctx context.Context, maxPause int, maxTaskDuration int64, client *gateClient.Client,
+) {
 	var (
 		token, login, pass string
 		notificationID     int64
@@ -44,7 +46,6 @@ func runOneUser(ctx context.Context, maxPause int, maxTaskDuration int64, client
 	for {
 		select {
 		case <-timer.C:
-
 			timer.Reset(time.Duration(rand.Intn(maxPause)+1) * time.Second)
 
 			if token == "" {
@@ -68,10 +69,8 @@ func runOneUser(ctx context.Context, maxPause int, maxTaskDuration int64, client
 
 					continue
 
-				default:
-					// Имитация не авторизированного действия ниже
+				default: // Имитация не авторизированного действия ниже
 				}
-
 			}
 
 			switch rand.Intn(5) {

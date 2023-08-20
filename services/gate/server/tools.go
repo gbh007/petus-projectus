@@ -14,12 +14,10 @@ const (
 	typeLabelName = "type"
 )
 
-var (
-	cacheTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-		Name: "petus_projectus_gate_cache_time",
-		Help: "Суммарное время обращений по кешу",
-	}, []string{typeLabelName})
-)
+var cacheTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+	Name: "petus_projectus_gate_cache_time",
+	Help: "Суммарное время обращений по кешу",
+}, []string{typeLabelName})
 
 func registerCacheHandle(t string, d time.Duration) {
 	cacheTimeTotal.WithLabelValues(t).Observe(d.Seconds())

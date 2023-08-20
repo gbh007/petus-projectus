@@ -1,0 +1,44 @@
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - contextcheck
+    - cyclop
+    - containedctx
+    - dupl
+    - dupword
+    - errname
+    - errorlint
+    - exportloopref
+    - forcetypeassert
+    - funlen
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofumpt
+    - lll
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - promlinter
+    - reassign
+    - revive
+    - stylecheck
+    - unparam
+    - usestdlibvars
+    - whitespace
+    - wsl
+    - goerr113
+
+linters-settings:
+  funlen:
+    lines: 100
+    statements: 50

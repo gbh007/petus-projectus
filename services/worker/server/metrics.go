@@ -22,7 +22,7 @@ var (
 		Help: "Бизнесовое время обработки задачи в worker",
 	}, []string{resultLabelName})
 	activeTaskTotal = promauto.With(metrics.DefaultRegistry).NewGauge(prometheus.GaugeOpts{
-		Name: "petus_projectus_worker_active_task_total",
+		Name: "petus_projectus_worker_active_task",
 		Help: "Общее количество активных задач в worker",
 	})
 )

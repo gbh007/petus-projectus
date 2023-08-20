@@ -23,7 +23,10 @@ func Run(ctx context.Context, cfg Config) error {
 
 	defer kafkaClient.Close()
 
-	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](cfg.RabbitMQ.Username, cfg.RabbitMQ.Password, cfg.RabbitMQ.Addr, cfg.RabbitMQ.QueueName)
+	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](
+		cfg.RabbitMQ.Username, cfg.RabbitMQ.Password, cfg.RabbitMQ.Addr, cfg.RabbitMQ.QueueName,
+	)
+
 	err = rabbitClient.Connect(ctx)
 	if err != nil {
 		return err
@@ -52,8 +55,12 @@ label1:
 	return nil
 }
 
-func handle(ctx context.Context, key string, data *gatedto.KafkaTaskData, rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData]) {
+func handle(
+	ctx context.Context, key string, data *gatedto.KafkaTaskData,
+	rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData],
+) {
 	startTime := time.Now()
+
 	log.Printf("accept %s %#+v\n", key, data)
 
 	rabbitCtx, rabbitCnl := context.WithTimeout(ctx, time.Second*10)

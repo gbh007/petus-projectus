@@ -6,7 +6,10 @@ import (
 	"errors"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
+
+var errNoConnections = errors.New("no connection")
 
 type Client struct {
 	client pb.LogClient
@@ -20,7 +23,7 @@ type UserInfo struct {
 func New(addr string) (*Client, error) {
 	c := new(Client)
 
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +36,7 @@ func New(addr string) (*Client, error) {
 
 func (c *Client) Close() error {
 	if c.conn == nil {
-		return errors.New("no connection")
+		return errNoConnections
 	}
 
 	return c.conn.Close()
@@ -43,7 +46,6 @@ func (c *Client) Activity(ctx context.Context, userID int64) (*LogData, error) {
 	res, err := c.client.Activity(ctx, &pb.ActivityRequest{
 		UserID: userID,
 	})
-
 	if err != nil {
 		return nil, err
 	}

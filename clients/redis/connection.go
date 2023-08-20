@@ -7,7 +7,7 @@ import (
 	"github.com/go-redis/redis"
 )
 
-func (c *Client[T]) Connect(ctx context.Context) (err error) {
+func (c *Client[T]) Connect(_ context.Context) (err error) {
 	// Правильно сделать полную настройку, но в данном проекте это не требуется
 	c.client = redis.NewClient(&redis.Options{
 		Addr:     c.addr,

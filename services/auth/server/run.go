@@ -26,6 +26,7 @@ func Run(ctx context.Context, comCfg CommunicationConfig, cfg DBConfig) error {
 	go metrics.Run(metrics.Config{Addr: comCfg.PrometheusAddress})
 
 	redisClient := redis.New[dto.UserInfo](comCfg.RedisAddress)
+
 	err := redisClient.Connect(ctx)
 	if err != nil {
 		return err

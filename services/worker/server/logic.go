@@ -1,10 +1,16 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
+)
+
+var (
+	errFailed           = errors.New("failed")
+	errInvalidInputData = errors.New("invalid")
 )
 
 func max(a, b int64) int64 {
@@ -17,11 +23,11 @@ func max(a, b int64) int64 {
 
 func someBusinessLogic(duration, failChance int64) (int64, string, error) {
 	if duration < 1 || duration > 60 {
-		return 0, "", fmt.Errorf("invalid duration %d", duration)
+		return 0, "", fmt.Errorf("%w duration %d", errInvalidInputData, duration)
 	}
 
 	if failChance < 0 || failChance > 100 {
-		return 0, "", fmt.Errorf("invalid fail chance %d", failChance)
+		return 0, "", fmt.Errorf("%w fail chance %d", errInvalidInputData, failChance)
 	}
 
 	totalSleep := rand.Int63n(max(duration*80/100, 1)) + 1 + duration*60/100
@@ -34,7 +40,7 @@ func someBusinessLogic(duration, failChance int64) (int64, string, error) {
 	result := rand.Int63n(100) + 1
 
 	if failChance >= result {
-		return result, "", fmt.Errorf("failed - result %d ", result)
+		return result, "", fmt.Errorf("%w: result %d ", errFailed, result)
 	}
 
 	return result, fmt.Sprintf(

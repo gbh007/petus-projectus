@@ -157,7 +157,7 @@
                 </mxCell>
                 <mxCell id="jBvno1wLVcxhWr8PwAGX-2" value="db:notification" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GwkgB3g6LEA0tyn6y8Ll-35" vertex="1" connectable="0">
                     <mxGeometry x="0.1314" y="-1" relative="1" as="geometry">
-                        <mxPoint x="16" y="9" as="offset"/>
+                        <mxPoint x="-18" y="-1" as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="GwkgB3g6LEA0tyn6y8Ll-36" value="Notification service" style="rounded=1;whiteSpace=wrap;html=1;" parent="GwkgB3g6LEA0tyn6y8Ll-1" vertex="1">
@@ -205,7 +205,7 @@
                 </mxCell>
                 <mxCell id="jBvno1wLVcxhWr8PwAGX-3" value="db:auth" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GwkgB3g6LEA0tyn6y8Ll-45" vertex="1" connectable="0">
                     <mxGeometry x="0.4037" relative="1" as="geometry">
-                        <mxPoint x="-27" y="-10" as="offset"/>
+                        <mxPoint x="-61" as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="GwkgB3g6LEA0tyn6y8Ll-46" value="Auth service" style="rounded=1;whiteSpace=wrap;html=1;" parent="GwkgB3g6LEA0tyn6y8Ll-1" vertex="1">
@@ -258,10 +258,10 @@
                 <mxCell id="16" value="Направление запроса,&lt;br&gt;от потребителя к поставщику" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="14" vertex="1">
                     <mxGeometry x="50" width="134" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="26" value="" style="group" vertex="1" connectable="0" parent="7">
+                <mxCell id="26" value="" style="group" parent="7" vertex="1" connectable="0">
                     <mxGeometry x="84" y="130" width="184" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=1 1;" edge="1" parent="26">
+                <mxCell id="27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=1 1;" parent="26" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="-60" y="14.5" as="sourcePoint"/>
                         <mxPoint x="30" y="14.5" as="targetPoint"/>
@@ -271,7 +271,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="28" value="Инструменты тестирования" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="26">
+                <mxCell id="28" value="Инструменты тестирования" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="26" vertex="1">
                     <mxGeometry x="50" width="134" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="17" value="Pushgateway" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fillColor=#f8cecc;strokeColor=#b85450;" parent="GwkgB3g6LEA0tyn6y8Ll-1" vertex="1">
@@ -291,16 +291,16 @@
                 <mxCell id="22" value="queue:task" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="GwkgB3g6LEA0tyn6y8Ll-1" vertex="1" connectable="0">
                     <mxGeometry x="759.9966666666668" y="450" as="geometry"/>
                 </mxCell>
-                <mxCell id="23" value="testbot" style="triangle;whiteSpace=wrap;html=1;dashed=1;dashPattern=1 1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="GwkgB3g6LEA0tyn6y8Ll-1">
+                <mxCell id="23" value="testbot" style="triangle;whiteSpace=wrap;html=1;dashed=1;dashPattern=1 1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" parent="GwkgB3g6LEA0tyn6y8Ll-1" vertex="1">
                     <mxGeometry x="-280" y="300" width="80" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=1 1;fillColor=#e1d5e7;strokeColor=#9673a6;" edge="1" parent="GwkgB3g6LEA0tyn6y8Ll-1" source="23" target="GwkgB3g6LEA0tyn6y8Ll-19">
+                <mxCell id="24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=1 1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="GwkgB3g6LEA0tyn6y8Ll-1" source="23" target="GwkgB3g6LEA0tyn6y8Ll-19" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="-180" y="460" as="sourcePoint"/>
                         <mxPoint x="-40" y="460" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="25" value="Protocol Buffers" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="24">
+                <mxCell id="25" value="Protocol Buffers" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="24" vertex="1" connectable="0">
                     <mxGeometry x="-0.1476" relative="1" as="geometry">
                         <mxPoint as="offset"/>
                     </mxGeometry>

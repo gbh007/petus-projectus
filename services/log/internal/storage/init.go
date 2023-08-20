@@ -8,10 +8,11 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	// import sql driver
 	_ "github.com/mailru/go-clickhouse/v2"
 )
 
-var databaseErr = errors.New("log database")
+var errDatabase = errors.New("log database")
 
 type Database struct {
 	db *sqlx.DB
@@ -22,12 +23,12 @@ func Init(ctx context.Context, username, password, dbHostWithPort, databaseName 
 
 	db, err := sqlx.Open("chhttp", cs)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", databaseErr, err)
+		return nil, fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	err = migrator.MigrateAll(ctx, migration.Migrations, db, true, migrator.ClickHouse)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", databaseErr, err)
+		return nil, fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return &Database{

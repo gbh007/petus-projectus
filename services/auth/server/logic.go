@@ -11,9 +11,9 @@ import (
 
 var (
 	// Неверный логин/пароль
-	LoginOrPasswordIncorrectErr = errors.New("login or password incorrect")
+	ErrLoginOrPasswordIncorrect = errors.New("login or password incorrect")
 	// Сессия не найдена
-	SessionNotFoundErr = errors.New("session not found")
+	ErrSessionNotFound = errors.New("session not found")
 )
 
 // createUser - создает нового пользователя
@@ -71,7 +71,7 @@ func (s *authServer) checkUser(ctx context.Context, login, password string) (*st
 
 	// Такого пользователя не существует
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, LoginOrPasswordIncorrectErr
+		return nil, ErrLoginOrPasswordIncorrect
 	}
 
 	if err != nil {
@@ -80,7 +80,7 @@ func (s *authServer) checkUser(ctx context.Context, login, password string) (*st
 
 	// Проверка пароля
 	if saltPassword(password, user.Salt) != user.Password {
-		return nil, LoginOrPasswordIncorrectErr
+		return nil, ErrLoginOrPasswordIncorrect
 	}
 
 	return user, nil
@@ -91,7 +91,7 @@ func (s *authServer) getUser(ctx context.Context, token string) (*storage.User, 
 	session, err := s.db.GetSessionByToken(ctx, token)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, SessionNotFoundErr
+			return nil, ErrSessionNotFound
 		}
 
 		return nil, err

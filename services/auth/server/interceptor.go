@@ -10,7 +10,9 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func logInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func logInterceptor(
+	ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
+) (resp interface{}, err error) {
 	addr := "unknown"
 	routeName := "unknown"
 

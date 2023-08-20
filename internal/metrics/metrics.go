@@ -21,7 +21,7 @@ var (
 	DefaultRegistry = prometheus.NewRegistry()
 
 	requestTime = promauto.With(DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-		Name: "petus_projectus_pb_request_duration_seconds",
+		Name: "petus_projectus_protobuf_request_duration",
 		Help: "Суммарное время обращений по кешу",
 	}, []string{endpointLabelName, resultLabelName})
 )

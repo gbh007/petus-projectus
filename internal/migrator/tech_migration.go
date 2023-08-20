@@ -19,7 +19,7 @@ func getMigration(dialect int) (string, error) {
 		return techMigrationClickHouse, nil
 
 	default:
-		return "", UnknownDialect
+		return "", ErrUnknownDialect
 	}
 }
 

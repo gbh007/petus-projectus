@@ -18,7 +18,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](cfg.RabbitMQ.Username, cfg.RabbitMQ.Password, cfg.RabbitMQ.Addr, cfg.RabbitMQ.QueueName)
+	rabbitClient := rabbitmq.New[handlerdto.RabbitMQData](
+		cfg.RabbitMQ.Username, cfg.RabbitMQ.Password, cfg.RabbitMQ.Addr, cfg.RabbitMQ.QueueName,
+	)
+
 	err = rabbitClient.Connect(ctx)
 	if err != nil {
 		return err

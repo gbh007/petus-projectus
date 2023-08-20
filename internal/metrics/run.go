@@ -19,6 +19,7 @@ func Run(cfg Config) {
 	log.Println("metrics start")
 
 	host, _ := os.Hostname()
+
 	if cfg.Job == "" {
 		cfg.Job = "service"
 	}

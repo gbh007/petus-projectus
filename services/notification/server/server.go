@@ -5,10 +5,13 @@ import (
 	"app/services/notification/internal/storage"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var errMissingInputData = errors.New("missing")
 
 type pbServer struct {
 	pb.UnimplementedNotificationServer
@@ -19,11 +22,11 @@ type pbServer struct {
 func (s *pbServer) New(ctx context.Context, req *pb.NewRequest) (*pb.NewResponse, error) {
 	userID := req.GetUserID()
 	if userID == 0 {
-		return nil, fmt.Errorf("missing user id")
+		return nil, fmt.Errorf("%w: user id", errMissingInputData)
 	}
 
 	if req.GetData() == nil {
-		return nil, fmt.Errorf("missing notification")
+		return nil, fmt.Errorf("%w: notification", errMissingInputData)
 	}
 
 	err := s.db.CreateNotification(ctx, &storage.Notification{
@@ -47,7 +50,7 @@ func (s *pbServer) New(ctx context.Context, req *pb.NewRequest) (*pb.NewResponse
 func (s *pbServer) List(ctx context.Context, req *pb.ListRequest) (*pb.ListResponse, error) {
 	userID := req.GetUserID()
 	if userID == 0 {
-		return nil, fmt.Errorf("missing user id")
+		return nil, fmt.Errorf("%w: user id", errMissingInputData)
 	}
 
 	rawNotifications, err := s.db.GetNotificationsByUserID(ctx, userID)
@@ -76,7 +79,7 @@ func (s *pbServer) List(ctx context.Context, req *pb.ListRequest) (*pb.ListRespo
 func (s *pbServer) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	id := req.GetId()
 	if id == 0 {
-		return nil, fmt.Errorf("missing id")
+		return nil, fmt.Errorf("%w: id", errMissingInputData)
 	}
 
 	err := s.db.MarkReadByID(ctx, id)
@@ -90,7 +93,7 @@ func (s *pbServer) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 func (s *pbServer) ReadAll(ctx context.Context, req *pb.ReadAllRequest) (*pb.ReadAllResponse, error) {
 	userID := req.GetUserID()
 	if userID == 0 {
-		return nil, fmt.Errorf("missing user id")
+		return nil, fmt.Errorf("%w: user id", errMissingInputData)
 	}
 
 	err := s.db.MarkReadByUserID(ctx, userID)

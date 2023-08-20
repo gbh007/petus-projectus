@@ -22,7 +22,9 @@ var (
 	userInfoKey  = &contextKey{"userInfoKey"}
 )
 
-func (s *pbServer) logInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (s *pbServer) logInterceptor(
+	ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
+) (resp interface{}, err error) {
 	requestID := randomSHA256String()
 	ctx = context.WithValue(ctx, requestIDKey, requestID)
 
@@ -40,7 +42,7 @@ func (s *pbServer) logInterceptor(ctx context.Context, req interface{}, info *gr
 
 	log.Printf("%s handle %s %s\n", requestID, routeName, addr)
 
-	kData := dto.KafkaLogData{
+	kafkaData := dto.KafkaLogData{
 		Action:      routeName,
 		Addr:        addr,
 		RequestTime: time.Now().UTC(),
@@ -48,22 +50,22 @@ func (s *pbServer) logInterceptor(ctx context.Context, req interface{}, info *gr
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
-		kData.RealIP = fistOf(md.Get("X-Real-IP"))
-		kData.ForwardedFor = md.Get("X-Forwarded-For")
-		kData.SessionToken = fistOf(md.Get(internal.SessionHeader))
+		kafkaData.RealIP = fistOf(md.Get("X-Real-IP"))
+		kafkaData.ForwardedFor = md.Get("X-Forwarded-For")
+		kafkaData.SessionToken = fistOf(md.Get(internal.SessionHeader))
 	}
 
 	requestStart := time.Now()
 
 	// Пытаемся идентифицировать пользователя.
 	// Время на идентификацию тоже считается частью запроса.
-	if kData.SessionToken != "" {
-		userInfo, err := s.authInfoRaw(ctx, kData.SessionToken)
+	if kafkaData.SessionToken != "" {
+		userInfo, err := s.authInfoRaw(ctx, kafkaData.SessionToken)
 		if err != nil {
 			log.Println(err)
 		} else {
 			ctx = context.WithValue(ctx, userInfoKey, userInfo)
-			kData.UserID = userInfo.ID
+			kafkaData.UserID = userInfo.ID
 		}
 	}
 
@@ -71,10 +73,10 @@ func (s *pbServer) logInterceptor(ctx context.Context, req interface{}, info *gr
 	resp, err = handler(ctx, req)
 
 	if err != nil {
-		kData.ErrorText = err.Error()
+		kafkaData.ErrorText = err.Error()
 	}
 
-	_ = s.kafkaLog.Write(ctx, requestID, kData)
+	_ = s.kafkaLog.Write(ctx, requestID, kafkaData)
 
 	metrics.LogRequest(routeName, err == nil, time.Since(requestStart))
 

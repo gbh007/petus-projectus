@@ -30,14 +30,17 @@ func (d *Database) CreateUser(ctx context.Context, user *User) (int64, error) {
 
 	user.Created = time.Now().UTC()
 
-	query, args, err := d.db.BindNamed(`INSERT INTO users (login, password, salt, created) VALUES (:login, :password, :salt, :created) RETURNING id;`, user)
+	query, args, err := d.db.BindNamed(
+		`INSERT INTO users (login, password, salt, created) VALUES (:login, :password, :salt, :created) RETURNING id;`,
+		user,
+	)
 	if err != nil {
-		return 0, fmt.Errorf("%w; %w", databaseErr, err)
+		return 0, fmt.Errorf("%w; %w", errDatabase, err)
 	}
 
 	err = d.db.GetContext(ctx, &id, query, args...)
 	if err != nil {
-		return 0, fmt.Errorf("%w; %w", databaseErr, err)
+		return 0, fmt.Errorf("%w; %w", errDatabase, err)
 	}
 
 	return id, nil
@@ -49,7 +52,7 @@ func (d *Database) GetUserByID(ctx context.Context, id int64) (*User, error) {
 
 	err := d.db.GetContext(ctx, user, `SELECT * FROM users WHERE id = ? LIMIT 1;`, id)
 	if err != nil {
-		return nil, fmt.Errorf("%w; %w", databaseErr, err)
+		return nil, fmt.Errorf("%w; %w", errDatabase, err)
 	}
 
 	return user, nil
@@ -61,7 +64,7 @@ func (d *Database) GetUserByLogin(ctx context.Context, login string) (*User, err
 
 	err := d.db.GetContext(ctx, user, `SELECT * FROM users WHERE login = ? LIMIT 1;`, login)
 	if err != nil {
-		return nil, fmt.Errorf("%w; %w", databaseErr, err)
+		return nil, fmt.Errorf("%w; %w", errDatabase, err)
 	}
 
 	return user, nil
@@ -73,7 +76,7 @@ func (d *Database) GetUsers(ctx context.Context) ([]*User, error) {
 
 	err := d.db.SelectContext(ctx, &users, `SELECT * FROM users ORDER BY ID;`)
 	if err != nil {
-		return nil, fmt.Errorf("%w; %w", databaseErr, err)
+		return nil, fmt.Errorf("%w; %w", errDatabase, err)
 	}
 
 	return users, nil

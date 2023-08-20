@@ -3,9 +3,9 @@ package dto
 import "time"
 
 type KafkaTaskData struct {
-	UserID       int64     `json:"user_id,omitempty"`
-	Chance       int64     `json:"chance,omitempty"`
-	Duration     int64     `json:"duration,omitempty"`
+	UserID   int64 `json:"user_id,omitempty"`
+	Chance   int64 `json:"chance,omitempty"`
+	Duration int64 `json:"duration,omitempty"`
 }
 
 type KafkaLogData struct {

@@ -4,17 +4,19 @@ import (
 	authClient "app/services/auth/client"
 	"app/services/gate/dto"
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"time"
 )
 
 const cacheTTL = time.Minute * 5
 
+var errUnauthorized = errors.New("unauthorized")
+
 func (s *pbServer) authInfo(ctx context.Context) (*authClient.UserInfo, error) {
 	info, ok := ctx.Value(userInfoKey).(*authClient.UserInfo)
 	if !ok {
-		return nil, fmt.Errorf("not authorized")
+		return nil, errUnauthorized
 	}
 
 	return info, nil

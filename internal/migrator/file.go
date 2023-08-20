@@ -23,7 +23,7 @@ type migrationFile struct {
 }
 
 // getFileList - возвращает список файлов миграций
-func getFileList(ctx context.Context, migrationsDir fs.FS) ([]migrationFile, error) {
+func getFileList(_ context.Context, migrationsDir fs.FS) ([]migrationFile, error) {
 	migrationFileList, err := fs.ReadDir(migrationsDir, ".")
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func getFileList(ctx context.Context, migrationsDir fs.FS) ([]migrationFile, err
 }
 
 // migrationFromFile - получает данные для применения миграции из файла
-func migrationFromFile(ctx context.Context, info migrationFile, migrationsDir fs.FS) (string, string, error) {
+func migrationFromFile(_ context.Context, info migrationFile, migrationsDir fs.FS) (string, string, error) {
 	file, err := migrationsDir.Open(info.Path)
 	if err != nil {
 		return "", "", err

@@ -41,7 +41,7 @@ func (db *Database) InsertTaskResult(ctx context.Context, t *TaskResult) error {
         :end_time
 );`, t)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil

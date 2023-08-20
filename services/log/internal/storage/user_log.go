@@ -41,7 +41,7 @@ func (db *Database) InsertUserLog(ctx context.Context, ul *UserLog) error {
         :request_time
 );`, ul)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil
@@ -52,7 +52,7 @@ func (db *Database) SelectUserLogByUserID(ctx context.Context, userID int64) ([]
 
 	err := db.db.SelectContext(ctx, &logs, `SELECT * FROM user_logs WHERE user_id = ?;`, userID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", databaseErr, err)
+		return nil, fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return logs, nil
@@ -64,11 +64,15 @@ func (db *Database) SelectCompressedUserLogByUserID(ctx context.Context, userID 
 		last  time.Time
 	)
 
-	row := db.db.QueryRowContext(ctx, `SELECT COUNT(request_id), MAX(request_time) FROM user_logs WHERE user_id = ? GROUP BY user_id;`, userID)
+	row := db.db.QueryRowContext(
+		ctx,
+		`SELECT COUNT(request_id), MAX(request_time) FROM user_logs WHERE user_id = ? GROUP BY user_id;`,
+		userID,
+	)
 
 	err := row.Scan(&count, &last)
 	if err != nil {
-		return count, last, fmt.Errorf("%w: %w", databaseErr, err)
+		return count, last, fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return count, last, nil

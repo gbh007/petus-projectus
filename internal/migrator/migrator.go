@@ -10,13 +10,16 @@ import (
 )
 
 // MigrateAll - производит накат всех доступных миграций
-func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash bool, dialect int) error {
+func MigrateAll( //nolint:cyclop // требуется рефакторинг в будущем
+	ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash bool, dialect int,
+) error {
 	list, err := getFileList(ctx, migrationsDir)
 	if err != nil {
-		return fmt.Errorf("%w: %w", MigratorError, err)
+		return fmt.Errorf("%w: %w", ErrMigrator, err)
 	}
 
 	log.Println("Доступные миграции")
+
 	for _, item := range list {
 		log.Printf("%4d > %s\n", item.Number, item.Name)
 	}
@@ -25,7 +28,7 @@ func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash
 
 	tx, err := db.BeginTxx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("%w: %w", MigratorError, err)
+		return fmt.Errorf("%w: %w", ErrMigrator, err)
 	}
 
 	// Функция для финализации транзакции
@@ -39,18 +42,18 @@ func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash
 
 	techMigration, err := getMigration(dialect)
 	if err != nil {
-		return fmt.Errorf("%w: %w", MigratorError, err)
+		return fmt.Errorf("%w: %w", ErrMigrator, err)
 	}
 
 	_, err = tx.ExecContext(ctx, techMigration)
 	if err != nil {
-		return fmt.Errorf("%w: %w", MigratorError, err)
+		return fmt.Errorf("%w: %w", ErrMigrator, err)
 	}
 
 	// Получаем список примененных миграций из БД
 	appliedMigrationsList, err := getAppliedMigration(ctx, tx)
 	if err != nil {
-		return fmt.Errorf("%w: %w", MigratorError, err)
+		return fmt.Errorf("%w: %w", ErrMigrator, err)
 	}
 
 	appliedMigrationsMap := make(map[int]mteMigration)
@@ -61,15 +64,13 @@ func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash
 	for _, migrationFile := range list {
 		mteInfo, migrationApplied := appliedMigrationsMap[migrationFile.Number]
 
-		var (
-			hash, body string
-		)
+		var hash, body string
 
 		// Не применена миграция или нужно сверить ее хеш
 		if !migrationApplied || checkHash {
 			body, hash, err = migrationFromFile(ctx, migrationFile, migrationsDir)
 			if err != nil {
-				return fmt.Errorf("%w: %w", MigratorError, err)
+				return fmt.Errorf("%w: %w", ErrMigrator, err)
 			}
 		}
 
@@ -82,7 +83,7 @@ func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash
 			if err != nil {
 				log.Printf("%s - ERR\n", migrationFile.Name)
 
-				return fmt.Errorf("%w: %w", MigratorError, err)
+				return fmt.Errorf("%w: %w", ErrMigrator, err)
 			}
 
 			log.Printf("%s - OK\n", migrationFile.Name)
@@ -96,7 +97,6 @@ func MigrateAll(ctx context.Context, migrationsDir fs.FS, db *sqlx.DB, checkHash
 		// Миграция уже применена
 		case migrationApplied:
 			log.Printf("%s - EXIST %v\n", migrationFile.Name, mteInfo.Applied)
-
 		}
 	}
 

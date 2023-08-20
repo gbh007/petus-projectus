@@ -6,8 +6,11 @@ import (
 	"errors"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var errNoConnections = errors.New("no connection")
 
 type Client struct {
 	client pb.NotificationClient
@@ -21,7 +24,7 @@ type UserInfo struct {
 func New(addr string) (*Client, error) {
 	c := new(Client)
 
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +37,7 @@ func New(addr string) (*Client, error) {
 
 func (c *Client) Close() error {
 	if c.conn == nil {
-		return errors.New("no connection")
+		return errNoConnections
 	}
 
 	return c.conn.Close()
@@ -51,7 +54,6 @@ func (c *Client) New(ctx context.Context, userID int64, n *Notification) error {
 			Created: timestamppb.New(n.Created),
 		},
 	})
-
 	if err != nil {
 		return err
 	}

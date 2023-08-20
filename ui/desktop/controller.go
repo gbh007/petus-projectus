@@ -10,7 +10,7 @@ type Controller interface {
 	Register(ctx context.Context, login, pass string) error
 	ButtonClick(ctx context.Context, duration, chance int64) error
 	Notifications(ctx context.Context) ([]Notification, error)
-	Activity(ctx context.Context) (int64,time.Time, error)
+	Activity(ctx context.Context) (int64, time.Time, error)
 }
 
 type Notification struct {

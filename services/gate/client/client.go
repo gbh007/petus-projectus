@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
+
+var errNoConnections = errors.New("no connection")
 
 type Client struct {
 	gateClient         pb.GateClient
@@ -25,7 +28,7 @@ type UserInfo struct {
 func New(addr string) (*Client, error) {
 	c := new(Client)
 
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +43,7 @@ func New(addr string) (*Client, error) {
 
 func (c *Client) Close() error {
 	if c.conn == nil {
-		return errors.New("no connection")
+		return errNoConnections
 	}
 
 	return c.conn.Close()
@@ -51,7 +54,6 @@ func (c *Client) Login(ctx context.Context, login, pass string) (string, error) 
 		Login:    login,
 		Password: pass,
 	})
-
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +66,6 @@ func (c *Client) Register(ctx context.Context, login, pass string) error {
 		Login:    login,
 		Password: pass,
 	})
-
 	if err != nil {
 		return err
 	}

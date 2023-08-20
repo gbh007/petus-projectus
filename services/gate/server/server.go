@@ -9,10 +9,13 @@ import (
 	logClient "app/services/log/client"
 	notificationClient "app/services/notification/client"
 	"context"
+	"errors"
 	"fmt"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var errInvalidInputData = errors.New("invalid")
 
 type pbServer struct {
 	pb.UnimplementedGateServer
@@ -51,7 +54,7 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 	requestID, _ := ctx.Value(requestIDKey).(string)
 
 	if req.GetDuration() <= 0 {
-		err := fmt.Errorf("invalid duration %d", req.GetDuration())
+		err := fmt.Errorf("%w duration %d", errInvalidInputData, req.GetDuration())
 
 		return nil, err
 	}
@@ -61,13 +64,13 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 		return nil, err
 	}
 
-	kData := dto.KafkaTaskData{
+	kafkaData := dto.KafkaTaskData{
 		UserID:   info.ID,
 		Chance:   req.GetChance(),
 		Duration: req.GetDuration(),
 	}
 
-	err = s.kafkaTask.Write(ctx, requestID, kData)
+	err = s.kafkaTask.Write(ctx, requestID, kafkaData)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +78,7 @@ func (s *pbServer) Button(ctx context.Context, req *pb.ButtonRequest) (*pb.Butto
 	return new(pb.ButtonResponse), nil
 }
 
-func (s *pbServer) List(ctx context.Context, req *pb.NotificationListRequest) (*pb.NotificationListResponse, error) {
+func (s *pbServer) List(ctx context.Context, _ *pb.NotificationListRequest) (*pb.NotificationListResponse, error) {
 	info, err := s.authInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -123,7 +126,7 @@ func (s *pbServer) Read(ctx context.Context, req *pb.NotificationReadRequest) (*
 	return new(pb.NotificationReadResponse), nil
 }
 
-func (s *pbServer) Activity(ctx context.Context, req *pb.ActivityRequest) (*pb.ActivityResponse, error) {
+func (s *pbServer) Activity(ctx context.Context, _ *pb.ActivityRequest) (*pb.ActivityResponse, error) {
 	info, err := s.authInfo(ctx)
 	if err != nil {
 		return nil, err

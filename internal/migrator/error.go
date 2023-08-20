@@ -7,9 +7,9 @@ import (
 
 var (
 	// Ошибка миграций БД
-	MigratorError = errors.New("migrator")
+	ErrMigrator = errors.New("migrator")
 	// Неизвестный диалект
-	UnknownDialect = errors.New("unknown dialect")
+	ErrUnknownDialect = errors.New("unknown dialect")
 )
 
 func logIfErr(err error) {

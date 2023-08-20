@@ -25,9 +25,14 @@ type Session struct {
 // Поля IsClosed, Used, Updated игнорируются, поле Created заменяется
 func (d *Database) CreateSession(ctx context.Context, session *Session) error {
 	session.Created = time.Now().UTC()
-	_, err := d.db.NamedExecContext(ctx, `INSERT INTO sessions(token, user_id, created) VALUES (:token, :user_id, :created);`, session)
+
+	_, err := d.db.NamedExecContext(
+		ctx,
+		`INSERT INTO sessions(token, user_id, created) VALUES (:token, :user_id, :created);`,
+		session,
+	)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil
@@ -39,7 +44,7 @@ func (d *Database) GetSessionByToken(ctx context.Context, token string) (*Sessio
 
 	err := d.db.GetContext(ctx, session, `SELECT * FROM sessions WHERE token = ? LIMIT 1;`, token)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", databaseErr, err)
+		return nil, fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return session, nil
@@ -49,7 +54,7 @@ func (d *Database) GetSessionByToken(ctx context.Context, token string) (*Sessio
 func (d *Database) UpdateSessionUsedTime(ctx context.Context, token string) error {
 	_, err := d.db.ExecContext(ctx, `UPDATE sessions SET used = ? WHERE token = ?;`, time.Now().UTC(), token)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil
@@ -59,7 +64,7 @@ func (d *Database) UpdateSessionUsedTime(ctx context.Context, token string) erro
 func (d *Database) DeleteSessionByToken(ctx context.Context, token string) error {
 	_, err := d.db.ExecContext(ctx, `DELETE FROM sessions WHERE token = ?;`, token)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil

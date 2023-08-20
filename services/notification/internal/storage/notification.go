@@ -29,6 +29,7 @@ type Notification struct {
 
 func (d *Database) CreateNotification(ctx context.Context, session *Notification) error {
 	session.Created = time.Now().UTC()
+
 	_, err := d.db.NamedExecContext(ctx, `INSERT INTO notifications(
         user_id,
         kind,
@@ -45,7 +46,7 @@ func (d *Database) CreateNotification(ctx context.Context, session *Notification
         :created
 	);`, session)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil
@@ -56,7 +57,7 @@ func (d *Database) GetNotificationsByUserID(ctx context.Context, userID int64) (
 
 	err := d.db.SelectContext(ctx, &users, `SELECT * FROM notifications WHERE user_id = ? ORDER BY id;`, userID)
 	if err != nil {
-		return nil, fmt.Errorf("%w; %w", databaseErr, err)
+		return nil, fmt.Errorf("%w; %w", errDatabase, err)
 	}
 
 	return users, nil
@@ -65,7 +66,7 @@ func (d *Database) GetNotificationsByUserID(ctx context.Context, userID int64) (
 func (d *Database) MarkReadByID(ctx context.Context, id int64) error {
 	_, err := d.db.ExecContext(ctx, "UPDATE notifications SET `read` = TRUE WHERE id = ?;", id)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil
@@ -74,7 +75,7 @@ func (d *Database) MarkReadByID(ctx context.Context, id int64) error {
 func (d *Database) MarkReadByUserID(ctx context.Context, userID int64) error {
 	_, err := d.db.ExecContext(ctx, "UPDATE notifications SET `read` = TRUE WHERE user_id = ?;", userID)
 	if err != nil {
-		return fmt.Errorf("%w: %w", databaseErr, err)
+		return fmt.Errorf("%w: %w", errDatabase, err)
 	}
 
 	return nil

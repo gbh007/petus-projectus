@@ -26,6 +26,7 @@ func Run(ctx context.Context, cfg Config) error {
 	defer authClient.Close()
 
 	redisClient := redis.New[dto.UserInfo](cfg.RedisAddress)
+
 	err = redisClient.Connect(ctx)
 	if err != nil {
 		return err
@@ -48,6 +49,7 @@ func Run(ctx context.Context, cfg Config) error {
 	defer logClient.Close()
 
 	kafkaTaskClient := kafka.New(cfg.Kafka.Addr, cfg.Kafka.TaskTopic, cfg.Kafka.GroupID, cfg.Kafka.NumPartitions)
+
 	err = kafkaTaskClient.Connect(cfg.Kafka.NumPartitions > 0)
 	if err != nil {
 		return err
@@ -56,6 +58,7 @@ func Run(ctx context.Context, cfg Config) error {
 	defer kafkaTaskClient.Close()
 
 	kafkaLogClient := kafka.New(cfg.Kafka.Addr, cfg.Kafka.LogTopic, cfg.Kafka.GroupID, cfg.Kafka.NumPartitions)
+
 	err = kafkaLogClient.Connect(cfg.Kafka.NumPartitions > 0)
 	if err != nil {
 		return err

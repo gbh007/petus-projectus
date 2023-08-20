@@ -9,6 +9,8 @@ import (
 
 var _ Controller = new(controllerGate)
 
+var errNoClient = errors.New("no client")
+
 type controllerGate struct {
 	client *gateClient.Client
 	token  string
@@ -29,7 +31,7 @@ func newControllerGate(addr string) (*controllerGate, error) {
 
 func (c *controllerGate) Close() error {
 	if c.client == nil {
-		return errors.New("no client")
+		return errNoClient
 	}
 
 	return c.client.Close()
