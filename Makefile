@@ -21,7 +21,7 @@ build:
 	$(BUILD_ENV) go build -o _build/testbot ./cmd/testbot
 
 up: build
-	docker compose up -d --build
+	docker compose up -d --build --remove-orphans
 
 logs:
 	docker compose logs -f auth gate handler log notification worker
