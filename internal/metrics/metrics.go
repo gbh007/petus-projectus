@@ -13,6 +13,9 @@ const (
 	hostLabelName     = "host"
 	instanceLabelName = "instance"
 
+	MetricsNamespace = "petus_projectus"
+	subsystemName    = "protobuf"
+
 	resultOK   = "ok"
 	resultFail = "fail"
 )
@@ -21,8 +24,10 @@ var (
 	DefaultRegistry = prometheus.NewRegistry()
 
 	requestTime = promauto.With(DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-		Name: "petus_projectus_protobuf_request_duration",
-		Help: "Суммарное время обращений по кешу",
+		Namespace: MetricsNamespace,
+		Subsystem: subsystemName,
+		Name:      "request_duration",
+		Help:      "Суммарное время обращений по кешу",
 	}, []string{endpointLabelName, resultLabelName})
 )
 

@@ -8,9 +8,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+const (
+	subsystemName = "log"
+)
+
 var handleTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummary(prometheus.SummaryOpts{
-	Name: "petus_projectus_log_handle_time",
-	Help: "Суммарное время обработки события для помещения в лог действий",
+	Namespace: metrics.MetricsNamespace,
+	Subsystem: subsystemName,
+	Name:      "handle_time",
+	Help:      "Суммарное время обработки события для помещения в лог действий",
 })
 
 func registerHandleTime(d time.Duration) {

@@ -12,11 +12,15 @@ import (
 
 const (
 	typeLabelName = "type"
+
+	subsystemName = "gate"
 )
 
 var cacheTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-	Name: "petus_projectus_gate_cache_time",
-	Help: "Суммарное время обращений по кешу",
+	Namespace: metrics.MetricsNamespace,
+	Subsystem: subsystemName,
+	Name:      "cache_time",
+	Help:      "Суммарное время обращений по кешу",
 }, []string{typeLabelName})
 
 func registerCacheHandle(t string, d time.Duration) {

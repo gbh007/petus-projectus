@@ -10,16 +10,21 @@ import (
 
 const (
 	resultLabelName = "result"
+	subsystemName   = "kafka"
 )
 
 var (
 	writeHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-		Name: "petus_projectus_kafka_write_handle_time",
-		Help: "Время обработки записи в kafka",
+		Namespace: metrics.MetricsNamespace,
+		Subsystem: subsystemName,
+		Name:      "write_handle_time",
+		Help:      "Время обработки записи в kafka",
 	}, []string{resultLabelName})
 	readHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-		Name: "petus_projectus_kafka_read_handle_time",
-		Help: "Время обработки чтения из kafka",
+		Namespace: metrics.MetricsNamespace,
+		Subsystem: subsystemName,
+		Name:      "read_handle_time",
+		Help:      "Время обработки чтения из kafka",
 	}, []string{resultLabelName})
 )
 

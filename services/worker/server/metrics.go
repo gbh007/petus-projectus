@@ -10,20 +10,27 @@ import (
 
 const (
 	resultLabelName = "result"
+	subsystemName   = "worker"
 )
 
 var (
 	handleTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummary(prometheus.SummaryOpts{
-		Name: "petus_projectus_worker_handle_time",
-		Help: "Суммарное время обработки задачи в worker",
+		Namespace: metrics.MetricsNamespace,
+		Subsystem: subsystemName,
+		Name:      "handle_time",
+		Help:      "Суммарное время обработки задачи в worker",
 	})
 	businessHandleTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
-		Name: "petus_projectus_worker_business_handle_time",
-		Help: "Бизнесовое время обработки задачи в worker",
+		Namespace: metrics.MetricsNamespace,
+		Subsystem: subsystemName,
+		Name:      "business_handle_time",
+		Help:      "Бизнесовое время обработки задачи в worker",
 	}, []string{resultLabelName})
 	activeTaskTotal = promauto.With(metrics.DefaultRegistry).NewGauge(prometheus.GaugeOpts{
-		Name: "petus_projectus_worker_active_task",
-		Help: "Общее количество активных задач в worker",
+		Namespace: metrics.MetricsNamespace,
+		Subsystem: subsystemName,
+		Name:      "active_task",
+		Help:      "Общее количество активных задач в worker",
 	})
 )
 
