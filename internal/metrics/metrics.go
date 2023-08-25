@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
@@ -30,6 +31,15 @@ var (
 		Help:      "Суммарное время обращений по кешу",
 	}, []string{endpointLabelName, resultLabelName})
 )
+
+func init() {
+	DefaultRegistry.MustRegister(
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
+			Namespace: MetricsNamespace,
+		}),
+		collectors.NewGoCollector(),
+	)
+}
 
 func ConvertOk(ok bool) string {
 	if ok {

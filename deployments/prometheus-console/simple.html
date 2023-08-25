@@ -8,9 +8,9 @@
     </td>
 </tr>
 <tr>
-    <td>RPM</td>
+    <td>RPM (gate)</td>
     <td>
-        {{ template "prom_query_drilldown" (args "sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))") }}
+        {{ template "prom_query_drilldown" (args "round(sum(rate(petus_projectus_protobuf_request_duration_count{instance=\"gate\"}[1m])))") }}
     </td>
 </tr>
 {{template "prom_right_table_tail"}}
@@ -19,36 +19,54 @@
 {{template "prom_content_head" .}}
 <h1>Petus-Projectus</h1>
 
-<h3>Protobuf</h3>
-<div id="protobufGraph"></div>
+<div style="display: flex;flex-direction: column;">
+    <hr />
 
-<h3>Business</h3>
-<div id="businessGraph"></div>
+    <div style="display: flex; gap: 0px 8%;">
+        <div style="width: 45%;">
+            <h3>Protobuf</h3>
+            <div id="protobufGraph"></div>
+        </div>
+        <div style="width: 45%;">
+            <h3>Business</h3>
+            <div id="businessGraph"></div>
+        </div>
+    </div>
 
-<h3>Kafka</h3>
-<div style="display: flex; gap: 0px 8%;">
-    <div style="width: 45%;">
-        <h4>read</h3>
+    <hr />
+
+    <h3>Kafka</h3>
+
+    <hr />
+
+    <div style="display: flex; gap: 0px 8%;">
+        <div style="width: 45%;">
+            <h4>read</h4>
             <div id="kafkaReadGraph"></div>
-    </div>
-    <div style="width: 45%;">
-        <h4>write</h3>
+        </div>
+        <div style="width: 45%;">
+            <h4>write</h4>
             <div id="kafkaWriteGraph"></div>
+        </div>
     </div>
-</div>
 
-<h3>RabbitMQ</h3>
-<div style="display: flex; gap: 0px 8%;">
-    <div style="width: 45%;">
-        <h4>read</h3>
+    <hr />
+
+    <h3>RabbitMQ</h3>
+
+    <hr />
+
+    <div style="display: flex; gap: 0px 8%;">
+        <div style="width: 45%;">
+            <h4>read</h4>
             <div id="rabbitMQReadGraph"></div>
-    </div>
-    <div style="width: 45%;">
-        <h4>write</h3>
+        </div>
+        <div style="width: 45%;">
+            <h4>write</h4>
             <div id="rabbitMQWriteGraph"></div>
+        </div>
     </div>
 </div>
-
 <script>
     function simpleDuration(selector, expr) {
         new PromConsole.Graph({
