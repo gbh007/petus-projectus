@@ -14,17 +14,19 @@ const (
 )
 
 var (
-	writeHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+	writeHandleTime = promauto.With(metrics.DefaultRegistry).NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: metrics.MetricsNamespace,
 		Subsystem: subsystemName,
 		Name:      "write_handle_time",
 		Help:      "Время обработки записи в kafka",
+		Buckets:   prometheus.DefBuckets,
 	}, []string{resultLabelName})
-	readHandleTime = promauto.With(metrics.DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+	readHandleTime = promauto.With(metrics.DefaultRegistry).NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: metrics.MetricsNamespace,
 		Subsystem: subsystemName,
 		Name:      "read_handle_time",
 		Help:      "Время обработки чтения из kafka",
+		Buckets:   prometheus.DefBuckets,
 	}, []string{resultLabelName})
 )
 

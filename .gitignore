@@ -2,4 +2,3 @@ _build
 *.exe
 main
 .hidden
-*.json

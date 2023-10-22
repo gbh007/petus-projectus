@@ -12,11 +12,12 @@ const (
 	subsystemName = "handler"
 )
 
-var handleTimeTotal = promauto.With(metrics.DefaultRegistry).NewSummary(prometheus.SummaryOpts{
+var handleTimeTotal = promauto.With(metrics.DefaultRegistry).NewHistogram(prometheus.HistogramOpts{
 	Namespace: metrics.MetricsNamespace,
 	Subsystem: subsystemName,
 	Name:      "handle_time",
 	Help:      "Суммарное время обработки события для отправки в worker",
+	Buckets:   prometheus.DefBuckets,
 })
 
 func registerHandleTime(d time.Duration) {

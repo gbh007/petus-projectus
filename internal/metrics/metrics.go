@@ -24,11 +24,12 @@ const (
 var (
 	DefaultRegistry = prometheus.NewRegistry()
 
-	requestTime = promauto.With(DefaultRegistry).NewSummaryVec(prometheus.SummaryOpts{
+	requestTime = promauto.With(DefaultRegistry).NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: subsystemName,
 		Name:      "request_duration",
-		Help:      "Суммарное время обращений по кешу",
+		Help:      "Распределение времени запроса",
+		Buckets:   prometheus.DefBuckets,
 	}, []string{endpointLabelName, resultLabelName})
 )
 

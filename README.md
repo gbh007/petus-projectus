@@ -20,6 +20,8 @@
 
 Панель для метрик доступна по адресу - <http://localhost:19090/consoles/custom/simple.html>
 
+Для графаны доступен дашборд - `grafana.json`
+
 Среднее время бизнес обработки задачи
 
 ```plain
@@ -42,8 +44,12 @@ sum(petus_projectus_handler_handle_time_count) - sum(petus_projectus_worker_hand
   sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))
 ```
 
-Количество запросов в минуту
+Количество запросов в секунду
 
 ```plain
 sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))
 ```
+
+## Общая схема
+
+![](scheme.drawio.png)
