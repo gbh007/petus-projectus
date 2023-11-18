@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,12 +9,12 @@ import (
 	"github.com/go-redis/redis"
 )
 
-func (c *Client[T]) Get(key string) (*T, error) {
+func (c *Client[T]) Get(ctx context.Context, key string) (*T, error) {
 	if c.client == nil {
 		return nil, fmt.Errorf("%w: Get: %w", ErrRedisClient, ErrClientNotInitialized)
 	}
 
-	raw, err := c.client.Get(key).Result()
+	raw, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, fmt.Errorf("%w: Get: %w", ErrRedisClient, ErrNotExists)

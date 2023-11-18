@@ -21,6 +21,7 @@ services:
       - log
       - redis
       - pushgateway
+      - jaeger
 
   auth:
     build:
@@ -39,6 +40,7 @@ services:
       - mariadb
       - redis
       - pushgateway
+      - jaeger
 
   handler:
     build:
@@ -58,6 +60,7 @@ services:
       - kafka
       - rabbitmq
       - pushgateway
+      - jaeger
 
   log:
     build:
@@ -80,6 +83,7 @@ services:
       - kafka
       - clickhouse
       - pushgateway
+      - jaeger
 
   worker:
     build:
@@ -103,6 +107,7 @@ services:
       - notification
       - clickhouse
       - pushgateway
+      - jaeger
 
   notification:
     build:
@@ -123,6 +128,7 @@ services:
     depends_on:
       - mariadb
       - pushgateway
+      - jaeger
 
   testbot:
     build:
@@ -223,6 +229,13 @@ services:
   pushgateway:
     image: prom/pushgateway:v1.6.0
     restart: always
+  
+
+  jaeger:
+    image: jaegertracing/all-in-one
+    restart: always
+    ports:
+      - "16686:16686"
 
 volumes:
   mariadb:

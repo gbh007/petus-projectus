@@ -9,6 +9,7 @@ type RabbitMQConfig struct {
 }
 
 type Config struct {
+	ServiceName         string
 	NotificationAddress string
 	PrometheusAddress   string
 	DB                  DBConfig

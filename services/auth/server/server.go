@@ -52,7 +52,7 @@ func (s *authServer) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.Log
 	}
 
 	// Инвалидация кеша
-	err = s.redis.Del(req.GetToken())
+	err = s.redis.Del(ctx, req.GetToken())
 	if err != nil {
 		log.Println(err)
 	}

@@ -10,6 +10,7 @@ import (
 	// import sql driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 )
 
 var errDatabase = errors.New("notification database")
@@ -24,7 +25,7 @@ func Init(ctx context.Context, username, password, dbHostWithPort, databaseName 
 		username, password, dbHostWithPort, databaseName,
 	)
 
-	db, err := sqlx.Open("mysql", cs)
+	db, err := otelsqlx.Open("mysql", cs)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errDatabase, err)
 	}

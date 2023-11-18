@@ -31,3 +31,6 @@ down:
 
 desktop:
 	go run cmd/desktop-client/main.go
+
+lint:
+	golangci-lint run

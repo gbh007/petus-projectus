@@ -25,7 +25,7 @@ func (s *pbServer) authInfo(ctx context.Context) (*authClient.UserInfo, error) {
 func (s *pbServer) authInfoRaw(ctx context.Context, token string) (*authClient.UserInfo, error) {
 	redisStart := time.Now()
 
-	redisData, err := s.redis.Get(token)
+	redisData, err := s.redis.Get(ctx, token)
 
 	redisFinish := time.Now()
 	registerCacheHandle("redis", redisFinish.Sub(redisStart))
@@ -52,7 +52,7 @@ func (s *pbServer) authInfoRaw(ctx context.Context, token string) (*authClient.U
 	}
 
 	// В данном случае кешер сеттится специально здесь, а не в сервисе авторизации
-	err = s.redis.Set(token, dto.UserInfo{ID: info.ID}, cacheTTL)
+	err = s.redis.Set(ctx, token, dto.UserInfo{ID: info.ID}, cacheTTL)
 	if err != nil {
 		log.Println(err)
 	}

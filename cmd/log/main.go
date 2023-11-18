@@ -3,6 +3,7 @@ package main
 import (
 	"app/internal/config"
 	"app/internal/metrics"
+	"app/internal/tracer"
 	"app/services/log/server"
 	"context"
 	"log"
@@ -17,6 +18,7 @@ type Config struct {
 	Kafka          config.Kafka
 	DB             config.Database
 	PrometheusAddr string `envconfig:"default=pushgateway:9091"`
+	Jaeger         config.Jaeger
 }
 
 func main() {
@@ -40,9 +42,15 @@ func main() {
 
 	metrics.InstanceName = "log"
 
+	_, _, err = tracer.InitTracer(cfg.Jaeger.URL, metrics.InstanceName)
+	if err != nil {
+		log.Fatalln(err) //nolint:gocritic
+	}
+
 	err = server.Run(
 		ctx,
 		server.Config{
+			ServiceName:       metrics.InstanceName,
 			SelfAddress:       cfg.Self.Full(),
 			PrometheusAddress: cfg.PrometheusAddr,
 			Kafka: server.KafkaConfig{

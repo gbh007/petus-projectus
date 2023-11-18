@@ -3,6 +3,7 @@ package main
 import (
 	"app/internal/config"
 	"app/internal/metrics"
+	"app/internal/tracer"
 	"app/services/worker/server"
 	"context"
 	"log"
@@ -18,6 +19,7 @@ type Config struct {
 	NotificationAddr string `envconfig:"default=notification:50051"`
 	PrometheusAddr   string `envconfig:"default=pushgateway:9091"`
 	RunnerCount      int    `envconfig:"default=20"`
+	Jaeger           config.Jaeger
 }
 
 func main() {
@@ -41,9 +43,15 @@ func main() {
 
 	metrics.InstanceName = "worker"
 
+	_, _, err = tracer.InitTracer(cfg.Jaeger.URL, metrics.InstanceName)
+	if err != nil {
+		log.Fatalln(err) //nolint:gocritic
+	}
+
 	err = server.Run(
 		ctx,
 		server.Config{
+			ServiceName:         metrics.InstanceName,
 			NotificationAddress: cfg.NotificationAddr,
 			PrometheusAddress:   cfg.PrometheusAddr,
 			DB: server.DBConfig{

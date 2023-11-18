@@ -1,9 +1,15 @@
 package kafka
 
-import "github.com/segmentio/kafka-go"
+import (
+	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+)
 
 type Client struct {
 	kafkaConn *kafka.Conn
+
+	tracer trace.Tracer
 
 	reader *kafka.Reader
 	writer *kafka.Writer
@@ -20,5 +26,6 @@ func New(addr, topic, groupID string, numPartitions int) *Client {
 		groupID:       groupID,
 		addr:          addr,
 		numPartitions: numPartitions,
+		tracer:        newTracer(otel.GetTracerProvider()),
 	}
 }

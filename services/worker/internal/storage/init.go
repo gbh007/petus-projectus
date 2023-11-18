@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 	// imp[ort sql driver]
 	_ "github.com/mailru/go-clickhouse/v2"
 )
@@ -21,7 +22,7 @@ type Database struct {
 func Init(ctx context.Context, username, password, dbHostWithPort, databaseName string) (*Database, error) {
 	cs := fmt.Sprintf("http://%s:%s@%s/%s", username, password, dbHostWithPort, databaseName)
 
-	db, err := sqlx.Open("chhttp", cs)
+	db, err := otelsqlx.Open("chhttp", cs)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errDatabase, err)
 	}

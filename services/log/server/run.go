@@ -10,6 +10,8 @@ import (
 	"net"
 	"sync"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 )
 
@@ -36,15 +38,19 @@ func Run(ctx context.Context, cfg Config) error {
 	defer kafkaClient.Close()
 
 	handler := &handler{
-		kafka: kafkaClient,
-		db:    db,
+		kafka:  kafkaClient,
+		db:     db,
+		tracer: otel.GetTracerProvider().Tracer(cfg.ServiceName),
 	}
 
 	server := &pbServer{
 		db: db,
 	}
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor))
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(logInterceptor),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	pb.RegisterLogServer(grpcServer, server)
 
 	go func() {

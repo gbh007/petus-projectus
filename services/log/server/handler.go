@@ -8,19 +8,24 @@ import (
 	"database/sql"
 	"log"
 	"time"
+
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type handler struct {
 	kafka *kafka.Client
 
 	db *storage.Database
+
+	tracer trace.Tracer
 }
 
 func (h *handler) Run(ctx context.Context) error {
 label1:
 	for {
 		data := new(gatedto.KafkaLogData)
-		key, err := h.kafka.Read(ctx, data)
+		ctx, key, err := h.kafka.Read(ctx, data)
 		if err != nil {
 			log.Println(err.Error())
 
@@ -39,6 +44,9 @@ label1:
 }
 
 func (h *handler) handle(ctx context.Context, key string, data *gatedto.KafkaLogData) {
+	ctx, span := h.tracer.Start(ctx, "handle msg")
+	defer span.End()
+
 	startTime := time.Now()
 
 	log.Printf("accept %s %#+v\n", key, data)
@@ -69,6 +77,9 @@ func (h *handler) handle(ctx context.Context, key string, data *gatedto.KafkaLog
 		RequestTime: data.RequestTime,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "handle error")
+
 		log.Println(key, err)
 	}
 

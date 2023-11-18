@@ -8,6 +8,8 @@ import (
 	"app/services/worker/internal/storage"
 	"context"
 	"sync"
+
+	"go.opentelemetry.io/otel"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -51,6 +53,7 @@ func Run(ctx context.Context, cfg Config) error {
 			notification: notificationClient,
 			db:           db,
 			queue:        messages,
+			tracer:       otel.GetTracerProvider().Tracer(cfg.ServiceName),
 		}
 
 		go func() {

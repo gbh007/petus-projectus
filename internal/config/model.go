@@ -32,3 +32,7 @@ type RabbitMQ struct {
 	Addr  string `envconfig:"default=rabbitmq:5672"`
 	Queue string `envconfig:"default=task"`
 }
+
+type Jaeger struct {
+	URL string `envconfig:"default=http://jaeger:14268/api/traces"`
+}

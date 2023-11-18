@@ -15,6 +15,11 @@
 2. Рефакторинг логов пользователя (после реализации внутреннего функционала):
    - Необходимо добавить новые поля в сигнатуру через кафку
    - Необходимо добавить новые поля в БД
+3. Переход от экспорта в Jaeger на OtelCollector
+
+## Jaeger
+
+> `http://localhost:16686/search`
 
 ## Примеры запросов для prometheus
 
@@ -52,4 +57,4 @@ sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))
 
 ## Общая схема
 
-![](scheme.drawio.png)
+![schema](scheme.drawio.png)

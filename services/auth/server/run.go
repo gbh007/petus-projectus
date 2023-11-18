@@ -9,6 +9,7 @@ import (
 	"context"
 	"net"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -49,7 +50,10 @@ func Run(ctx context.Context, comCfg CommunicationConfig, cfg DBConfig) error {
 		redis: redisClient,
 	}
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor))
+	grpcServer := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(logInterceptor),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	pb.RegisterAuthServer(grpcServer, s)
 
 	go func() {

@@ -8,7 +8,8 @@ import (
 	handlerdto "app/services/handler/dto"
 	"context"
 	"log"
-	"time"
+
+	"go.opentelemetry.io/otel"
 )
 
 func Run(ctx context.Context, cfg Config) error {
@@ -34,10 +35,14 @@ func Run(ctx context.Context, cfg Config) error {
 
 	defer rabbitClient.Close()
 
+	h := handler{
+		tracer: otel.GetTracerProvider().Tracer(cfg.ServiceName),
+	}
+
 label1:
 	for {
 		data := new(gatedto.KafkaTaskData)
-		key, err := kafkaClient.Read(ctx, data)
+		ctx, key, err := kafkaClient.Read(ctx, data)
 		if err != nil {
 			log.Println(err.Error())
 
@@ -49,33 +54,8 @@ label1:
 			}
 		}
 
-		handle(ctx, key, data, rabbitClient)
+		h.handle(ctx, key, data, rabbitClient)
 	}
 
 	return nil
-}
-
-func handle(
-	ctx context.Context, key string, data *gatedto.KafkaTaskData,
-	rabbitClient *rabbitmq.Client[handlerdto.RabbitMQData],
-) {
-	startTime := time.Now()
-
-	log.Printf("accept %s %#+v\n", key, data)
-
-	rabbitCtx, rabbitCnl := context.WithTimeout(ctx, time.Second*10)
-	defer rabbitCnl()
-
-	err := rabbitClient.Write(rabbitCtx, handlerdto.RabbitMQData{
-		RequestID: key,
-		UserID:    data.UserID,
-		Chance:    data.Chance,
-		Duration:  data.Duration,
-	})
-	if err != nil {
-		log.Println(key, err)
-	}
-
-	log.Printf("send to RabbitMQ %s\n", key)
-	registerHandleTime(time.Since(startTime))
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"app/internal/config"
 	"app/internal/metrics"
+	"app/internal/tracer"
 	"app/services/auth/server"
 	"context"
 	"log"
@@ -17,6 +18,7 @@ type Config struct {
 	DB             config.Database
 	RedisAddr      string `envconfig:"default=redis:6379"`
 	PrometheusAddr string `envconfig:"default=pushgateway:9091"`
+	Jaeger         config.Jaeger
 }
 
 func main() {
@@ -39,6 +41,11 @@ func main() {
 	log.Println("server start")
 
 	metrics.InstanceName = "auth"
+
+	_, _, err = tracer.InitTracer(cfg.Jaeger.URL, metrics.InstanceName)
+	if err != nil {
+		log.Fatalln(err) //nolint:gocritic
+	}
 
 	err = server.Run(ctx,
 		server.CommunicationConfig{

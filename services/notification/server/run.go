@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -37,7 +38,10 @@ func Run(ctx context.Context, cfg Config) error {
 		db: db,
 	}
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(logInterceptor))
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(logInterceptor),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	pb.RegisterNotificationServer(grpcServer, s)
 
 	go func() {

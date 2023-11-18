@@ -12,6 +12,7 @@ type DBConfig struct {
 }
 
 type Config struct {
+	ServiceName       string
 	SelfAddress       string
 	PrometheusAddress string
 	Kafka             KafkaConfig
