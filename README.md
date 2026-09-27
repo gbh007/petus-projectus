@@ -18,6 +18,10 @@
 
 > make up
 
+## Общая схема
+
+![schema](scheme.drawio.png)
+
 ## TODO
 
 1. Рефакторинг работы с ошибками
@@ -65,6 +69,7 @@ sum(petus_projectus_handler_handle_time_count) - sum(petus_projectus_worker_hand
 sum by (instance) (rate(petus_projectus_protobuf_request_duration_count[1m]))
 ```
 
-## Общая схема
+## Другие кнопочные
 
-![schema](scheme.drawio.png)
+- [Example baton nagimator](https://github.com/gbh007/example-baton-nagimator)
+- [Buttoners](https://github.com/gbh007/buttoners)
